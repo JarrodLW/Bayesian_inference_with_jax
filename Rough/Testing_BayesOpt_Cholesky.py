@@ -3,7 +3,7 @@ from Rough.BayesOptFromScratch_Cholesky import *
 
 # objective function
 def objective(x, noise=0.01):
-    noise = normal(loc=0, scale=noise)
+    noise = norm(loc=0, scale=noise)
     return (x ** 2 * np.sin(5 * np.pi * x) ** 6.0) + noise
 
 acq_type='PI'

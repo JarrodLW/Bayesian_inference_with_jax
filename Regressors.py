@@ -1,48 +1,9 @@
-# Created 08/09/2021. Mirroring the "BasicBayesOptScikitLearn" file but implementing the
-# Gaussian process regressor from scratch.
-# Supported acquisition functions: 'PI'
-# The formulae can be found in Rasmussen and Williams
+# Created 06/10/2021
 
 import numpy as np
-#from numpy.random import normal
-from scipy.stats import norm
-import matplotlib.pyplot as plt
 from scipy.linalg import cholesky, solve_triangular
-import time
+from myFunctions import RBF
 
-
-# TODO adapt entire script to allow for multi-dimensional inputs
-
-## defining kernel
-
-class RBF():
-
-    # \sigma^2\exp(-\Vert x - x'\Vert^2/2l**2)
-
-    def __init__(self, stdev, lengthscale):
-        self.stdev = stdev
-        self.lengthscale = lengthscale
-
-    def __call__(self, X1, X2):
-        # computes the matrix of covariances of sample points X1 against sample points X2. Each of X1, X2 is a 1d numpy array
-
-        squared_dists = -2 * np.outer(X1, X2) + X1[:, None] ** 2 + X2 ** 2
-        covs = self.stdev ** 2 * np.exp(-0.5*squared_dists / self.lengthscale ** 2)
-
-        return covs
-
-
-## defining surrogate
-
-# def surrogate(model, x):
-# 	# Returns the mean and std of the model (Gaussian process) at point x
-# 	# catch any warning generated when making a prediction
-# 	with catch_warnings():
-# 		# ignore generated warnings
-# 		simplefilter("ignore")
-# 		return model.predict(x)
-
-## The model (Gaussian process regressor)
 
 class GaussianProcessReg():
     # instance is a Gaussian process model with mean-zero prior, with fit and predict methods.
@@ -142,64 +103,3 @@ class GaussianProcessReg():
 
         return pred_mu, pred_covs
 
-
-## defining acquisition functions
-
-def PI_acquisition(margin, Xsamples, model):
-    # isn't there a closed-form solution for the optimal sampling point?
-    # calculate the best surrogate score found so far
-    #yhat, _ = model.predict(model.X)
-    #best = np.amax(yhat)  # is this the correct value to be using? Highest surrogate value versus highest observed...
-    best = np.amax(model.y)
-    best_plus_margin = best + margin
-    # calculate mean and stdev via surrogate function
-    mu, covs = model.predict(Xsamples)
-    std = np.sqrt(np.diag(covs))
-    # calculate the probability of improvement
-    probs = norm.cdf((mu - best_plus_margin) / (std + 1E-20))
-
-    return probs
-
-
-def EI_acquisition(margin, Xsamples, model):
-
-    best = np.amax(model.y)
-    best_plus_margin = best + margin
-    mu, covs = model.predict(Xsamples)
-    std = np.sqrt(np.diag(covs))
-    Z = (mu - best_plus_margin) / (std + 1E-20)
-    scores = ((mu - best_plus_margin)*norm.cdf(Z) + std*norm.pdf(Z))*(std > 0)  # see Mockus and Mockus
-
-    return scores
-
-
-def UCB_acquisition(std_weight, Xsamples, model):
-
-    mu, covs = model.predict(Xsamples)
-    std = np.sqrt(np.diag(covs))
-    scores = mu + std_weight*std
-
-    return scores
-
-##  optimize the acquisition function
-
-def opt_acquisition(acq_type, model, margin, num_samples):  # TODO allow for multiple points to be kept
-    # random search, generate random samples
-    Xsamples = np.random.random(num_samples)
-    # calculate the acquisition function for each sample
-
-    if acq_type=='PI':
-        scores = PI_acquisition(margin, Xsamples, model)
-
-    elif acq_type=='EI':
-        scores = EI_acquisition(margin, Xsamples, model)
-
-    # locate the index of the largest scores
-    ix = np.argmax(scores)
-
-    print("Best score " + str(np.amax(scores)))
-
-    #plt.figure()
-    #plt.scatter(Xsamples, scores)
-
-    return Xsamples[ix]
