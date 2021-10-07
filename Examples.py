@@ -1,5 +1,5 @@
 # Created 06/10/2021
-# Runs regression and optimisation examples for choice of prior mean functions, ...
+# Runs regression and optimisation examples for choice of prior mean function, ...
 
 from Regressors import *
 from Utils import plot
@@ -10,11 +10,12 @@ import time
 from numpy.random import normal
 
 
-gaussian_reg_example = True
-optimisation = False
-num_initial_samples = 1
+gaussian_reg_example = False
+optimisation = True
+num_initial_samples = 3
+acq_type = 'PI'  # only needed for optimisation example
 
-prior_mean_func = None
+prior_mean_func = 'quadratic'
 
 if prior_mean_func is None:
     model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
@@ -86,7 +87,7 @@ if gaussian_reg_example: # TODO: move plotting functionality etc into Utils
 
 elif optimisation:
 
-    num_iters = 10
+    num_iters = 5
     num_samples = 2000
 
     if acq_type == 'EI' or 'PI':
@@ -106,7 +107,7 @@ elif optimisation:
 
         plt.clf()
         plt.ylim(-0.1, 1.)
-        plot(model.X, model.y, model)
+        plot(model.X, model.y, model, objective)
         plt.pause(1e-17)
         time.sleep(2.)
         # plt.show()
