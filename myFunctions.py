@@ -54,9 +54,7 @@ class RBF():
     def __call__(self, X1, X2):
         # computes the matrix of covariances of sample points X1 against sample points X2. Each of X1, X2 is a 1d numpy array
 
-        #squared_dists = -2 * np.outer(X1, X2) + X1[:, None] ** 2 + X2 ** 2
         covs = self.stdev ** 2 * np.exp(-0.5*distance.cdist(X1, X2, 'euclidean')**2 / self.lengthscale ** 2)
-        #covs = self.stdev ** 2 * np.exp(-0.5 * squared_dists / self.lengthscale ** 2)
 
         return covs
 

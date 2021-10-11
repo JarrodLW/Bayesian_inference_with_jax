@@ -6,7 +6,7 @@ from myFunctions import RBF
 
 
 class GaussianProcessReg():
-    # instance is a Gaussian process model with mean-zero prior, with fit and predict methods.
+    # instance is a Gaussian process model with prescribed prior, with fit and predict methods.
 
     def __init__(self, kernel_type='RBF', domain_dim=1, sigma=1., lengthscale=1.0, obs_noise_stdev=0.1,
                  prior_mean=None, prior_mean_kwargs=None): #TODO: rename obs_noise_stdev and sigma
@@ -35,41 +35,23 @@ class GaussianProcessReg():
 
     def fit(self, Xsamples, ysamples, compute_cov=False):
 
-        num_samples = Xsamples.shape[0]
-        #ysamples -= self.prior_mean(Xsamples, **self.prior_mean_kwargs)
-
         if compute_cov:
             self.covs = self.kernel(Xsamples, Xsamples)
             self.X = Xsamples
             self.y = ysamples
 
         else:
-            # recompute cross covariances
+            # cross covariances
             test_train_covs = self.kernel(self.X, Xsamples)
 
-            #print("Shape of new covs matrix: " + str(test_train_covs.shape))
-
-            # compute sample covariances
+            # broadcast covariances
             k = self.kernel(Xsamples, Xsamples)
+            self.covs = np.block([[self.covs, test_train_covs],
+                                  [test_train_covs.T, k]])
 
-            covs = np.zeros((self.covs.shape[0] + num_samples, self.covs.shape[0] + num_samples))
-            covs[:-num_samples, :-num_samples] = self.covs
-            covs[-num_samples, :-num_samples] = np.ndarray.flatten(test_train_covs)
-            covs[:-num_samples, -num_samples] = np.ndarray.flatten(test_train_covs)
-            covs[-num_samples:, -num_samples:] = k
-            self.covs = covs
-
-            # updating y-vector
-            y_new = np.zeros(self.X.shape[0] + num_samples)
-            y_new[:-num_samples] = self.y
-            y_new[-num_samples:] = ysamples
-            self.y = y_new
-
-            # update x-sample vector
-            X_new = np.zeros((self.X.shape[0] + num_samples, self.domain_dim))
-            X_new[:-num_samples] = self.X
-            X_new[-num_samples:] = Xsamples
-            self.X = X_new
+            # update x and y vectors
+            self.X = np.concatenate((self.X, Xsamples), axis=0)
+            self.y = np.concatenate((self.y, ysamples), axis=0)
 
         # perform Cholesky factorisation of noise-shifted covariance matrix
 
@@ -85,20 +67,11 @@ class GaussianProcessReg():
 
         test_train_covs = self.kernel(self.X, Xsamples)
 
-        # print("y shape "+str(self.y.shape))
-        # print("L shape "+str(self.L_transp.shape))
-
         y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
         alpha = solve_triangular(self.L.T, solve_triangular(self.L, y_shifted, lower=True), lower=False)  # following nomenclature in Rasmussen
 
-        # print("y shape: " + str(y_shifted.shape))
-        # print("test-train covs shape: " + str(test_train_covs.shape))
-        # print("alpha shape: " + str(alpha.shape))
-
         pred_mu = np.matmul(test_train_covs.T, alpha)
         pred_mu += self.prior_mean(Xsamples, **self.prior_mean_kwargs)
-
-        # print("shape of pred mu " + str(pred_mu.shape))
 
         pred_mu = np.ndarray.flatten(pred_mu)
         k = self.kernel(Xsamples, Xsamples)

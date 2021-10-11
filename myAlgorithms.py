@@ -4,7 +4,7 @@ import numpy as np
 from myFunctions import PI_acquisition, EI_acquisition, UCB_acquisition
 
 
-def opt_acquisition(acq_type, model, margin, num_samples):  # TODO allow for multiple points to be kept
+def opt_acquisition(acq_type, model, num_samples, std_weight=1., margin=None):  # TODO allow for multiple points to be kept
     # TODO allow for differing domain geometries
     domain_dim = model.domain_dim
     # random search, generate random samples
@@ -16,6 +16,9 @@ def opt_acquisition(acq_type, model, margin, num_samples):  # TODO allow for mul
 
     elif acq_type=='EI':
         scores = EI_acquisition(margin, Xsamples, model)
+
+    elif acq_type=='UCB':
+        scores = UCB_acquisition(std_weight, Xsamples, model)
 
     #print("Scores computed successfully")
 

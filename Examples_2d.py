@@ -11,8 +11,8 @@ import time
 from numpy.random import normal
 
 
-gaussian_reg_example = False
-optimisation = True
+gaussian_reg_example = True
+optimisation = False
 acq_type = 'PI'
 num_initial_samples = 20
 

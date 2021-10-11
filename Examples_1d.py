@@ -13,8 +13,7 @@ from numpy.random import normal
 gaussian_reg_example = False
 optimisation = True
 num_initial_samples = 3
-acq_type = 'PI'  # only needed for optimisation example
-
+acq_type = 'UCB'  # only needed for optimisation example
 prior_mean_func = 'quadratic'
 
 if prior_mean_func is None:
@@ -95,12 +94,17 @@ elif optimisation:
     x_vals = X0
     y_vals = y0
 
-    if acq_type == 'EI' or 'PI':
+    if acq_type == 'EI' or acq_type == 'PI':
         margin = 0.01
+        std_weight = None
+
+    elif acq_type == 'UCB':
+        margin = None
+        std_weight = 1.
 
     for i in range(num_iters):
         # select the next point to sample
-        x = opt_acquisition(acq_type, model, margin, num_samples)
+        x = opt_acquisition(acq_type, model, num_samples, margin=margin, std_weight=std_weight)
 
         # sample the point
         actual = objective(x)
