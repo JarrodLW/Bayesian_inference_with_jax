@@ -2,13 +2,13 @@
 
 import numpy as np
 from scipy.linalg import cholesky, solve_triangular
-from myFunctions import RBF
+from myFunctions import RBF, Periodic
 
 
 class GaussianProcessReg():
     # instance is a Gaussian process model with prescribed prior, with fit and predict methods.
 
-    def __init__(self, kernel_type='RBF', domain_dim=1, sigma=1., lengthscale=1.0, obs_noise_stdev=0.1,
+    def __init__(self, kernel_type='RBF', domain_dim=1, sigma=1., obs_noise_stdev=0.1, lengthscale=1.0, period=None,
                  prior_mean=None, prior_mean_kwargs=None): #TODO: rename obs_noise_stdev and sigma
 
         self.mu = None
@@ -33,6 +33,9 @@ class GaussianProcessReg():
         if kernel_type == 'RBF':
             self.kernel = RBF(sigma, lengthscale)
 
+        elif kernel_type == 'Periodic':
+            self.kernel = Periodic(sigma, lengthscale, period)
+
     def fit(self, Xsamples, ysamples, compute_cov=False):
 
         if compute_cov:
@@ -54,13 +57,12 @@ class GaussianProcessReg():
             self.y = np.concatenate((self.y, ysamples), axis=0)
 
         # perform Cholesky factorisation of noise-shifted covariance matrix
-
         covs_plus_noise = self.covs + self.obs_noise_stdev**2*np.identity(self.covs.shape[0])
         self.L = cholesky(covs_plus_noise, lower=True)
 
+        # TODO throw up error if it failed to to factorise to sufficient accuracy
         print("failure to factorise " + str(np.sqrt(np.sum(np.square(np.matmul(self.L, self.L.T) - covs_plus_noise)))
               /np.sqrt(np.sum(np.square(covs_plus_noise)))))
-
 
     def predict(self, Xsamples):  # TODO generalise this to allow for multiple sampling points
         # should I be saving the mu and std to memory?

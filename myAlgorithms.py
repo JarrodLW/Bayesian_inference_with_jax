@@ -20,15 +20,9 @@ def opt_acquisition(acq_type, model, num_samples, std_weight=1., margin=None):  
     elif acq_type=='UCB':
         scores = UCB_acquisition(std_weight, Xsamples, model)
 
-    #print("Scores computed successfully")
-
     # locate the index of the largest scores
     ix = np.argmax(scores)
 
     print("Best score " + str(np.amax(scores)))
-
-    # print("index: " + str(ix))
-    # print("Xsamples shape: " + str(Xsamples.shape))
-    # print("new point shape: " + str(Xsamples[ix].shape))
 
     return Xsamples[ix].reshape(1, domain_dim)

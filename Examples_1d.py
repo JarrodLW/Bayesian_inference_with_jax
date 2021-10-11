@@ -1,5 +1,5 @@
 # Created 06/10/2021
-# Runs regression and optimisation examples for choice of prior mean function, ...
+# Runs regression and optimisation examples for choice of prior mean function, acquisition function, kernel
 
 from Regressors import *
 from Utils import plot
@@ -12,28 +12,44 @@ from numpy.random import normal
 
 gaussian_reg_example = False
 optimisation = True
-num_initial_samples = 3
-acq_type = 'UCB'  # only needed for optimisation example
+num_initial_samples = 1
+acq_type = 'EI'  # only needed for optimisation example
 prior_mean_func = 'quadratic'
+kernel_type = 'RBF'
 
 if prior_mean_func is None:
-    model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
+
+    if kernel_type == 'RBF':
+        model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
+
+    elif kernel_type == 'Periodic':
+        model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2)
 
 elif prior_mean_func == 'linear':
 
     def linear(x, a, b):
         return np.ndarray.flatten(a * x + b)
 
-    model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=linear,
-                               prior_mean_kwargs={'a': 0.5, 'b': 0})
+    if kernel_type=='RBF':
+        model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=linear,
+                                   prior_mean_kwargs={'a': 0.5, 'b': 0})
+
+    elif kernel_type=='Periodic':
+        model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2,
+                                   prior_mean=linear, prior_mean_kwargs={'a': 0.5, 'b': 0})
 
 elif prior_mean_func == 'quadratic':
 
     def quadratic(x, a, b, c):
         return np.ndarray.flatten(a * x ** 2 + b * x + c)
 
-    model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
-                               prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+    if kernel_type == 'RBF':
+        model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
+                                   prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+
+    elif kernel_type == 'Periodic':
+        model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2,
+                                   prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
 
 def objective(x, noise=0.01):
@@ -55,7 +71,6 @@ if gaussian_reg_example: # TODO: move plotting functionality etc into Utils
     num_test_points = 1000
     predictions_mu = np.zeros((iters, num_test_points))
     predictions_std_squared = np.zeros((iters, num_test_points))
-    #test_points = np.random.random((num_test_points, domain_dim))
     test_points = np.asarray(np.arange(0, 1, 1 / num_test_points)).reshape((num_test_points, domain_dim))
     x_vals = X0
     y_vals = y0
@@ -63,8 +78,6 @@ if gaussian_reg_example: # TODO: move plotting functionality etc into Utils
 
     for i in range(iters):
         x_coords = np.random.random((1, domain_dim))
-        # x_vals += [x_val]
-        # X = np.asarray(x_vals)
         y_val = objective(x_coords)
         model.fit(x_coords, y_val)
 
@@ -85,7 +98,7 @@ if gaussian_reg_example: # TODO: move plotting functionality etc into Utils
 
 elif optimisation:
 
-    num_iters = 10
+    num_iters = 5
     num_samples = 2000
     num_test_points = 1000
     test_points = np.asarray(np.arange(0, 1, 1 / num_test_points)).reshape((num_test_points, domain_dim))

@@ -11,15 +11,16 @@ import time
 from numpy.random import normal
 
 
-gaussian_reg_example = True
-optimisation = False
+gaussian_reg_example = False
+optimisation = True
 acq_type = 'PI'
 num_initial_samples = 20
 
 prior_mean_func = None
 
 if prior_mean_func is None:
-    model = GaussianProcessReg(domain_dim=2, sigma=0.05, lengthscale=0.1, obs_noise_stdev=0.01)
+    model = GaussianProcessReg(kernel_type='Periodic', domain_dim=2, sigma=0.05, lengthscale=0.1,
+                               obs_noise_stdev=0.01, period=4)
 
 
 def objective(x, noise=0.05):
@@ -105,12 +106,12 @@ elif optimisation:
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
-    ax.plot_surface(x_0, x_1, y_vals_no_noise.reshape((sqrt_num_test_points, sqrt_num_test_points)), alpha=0.8,
+    ax.plot_surface(x_0, x_1, y_vals_no_noise.reshape((sqrt_num_test_points, sqrt_num_test_points)), alpha=0.5,
                     color='y')
 
     for i in range(iters):
         # select the next point to sample
-        x = opt_acquisition(acq_type, model, margin, num_samples)
+        x = opt_acquisition(acq_type, model, num_samples, margin=0.01)
 
         # sample the point
         actual = objective(x)
@@ -123,10 +124,12 @@ elif optimisation:
         x_vals = np.append(x_vals, x, axis=0)
         y_vals = np.append(y_vals, actual)
 
-        ax.scatter(x_vals[:, 0], x_vals[:, 1], y_vals)
+        ax.scatter(x_vals[:, 0], x_vals[:, 1], y_vals, color='k')
+        time.sleep(2.)
 
-    print('First best guess: x=%.3f, y=%.3f' % (X0[ix], y0[ix]))
+    print('First best guess: x=' + str(X0[ix]) + ', y=%.3f' % y0[ix])
 
     ix_new = np.argmax(model.y)
-    print('Best Result: x=%.3f, y=%.3f' % (model.X[ix_new], model.y[ix_new]))
+    print('Best result: x=' + str(model.X[ix_new]) + ', y=%.3f' % model.y[ix_new])
+
 
