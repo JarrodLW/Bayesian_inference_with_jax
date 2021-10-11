@@ -1,5 +1,5 @@
 # Created 06/10/2021
-# Runs regression and optimisation examples for choice of prior mean function, ...
+# Runs regression and optimisation examples for choice of prior mean function, acquisition function
 import numpy as np
 
 from Regressors import *
