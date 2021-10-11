@@ -8,7 +8,7 @@ from myFunctions import RBF
 class GaussianProcessReg():
     # instance is a Gaussian process model with mean-zero prior, with fit and predict methods.
 
-    def __init__(self, kernel_type='RBF', sigma=1., lengthscale=1.0, obs_noise_stdev=0.1,
+    def __init__(self, kernel_type='RBF', domain_dim=1, sigma=1., lengthscale=1.0, obs_noise_stdev=0.1,
                  prior_mean=None, prior_mean_kwargs=None): #TODO: rename obs_noise_stdev and sigma
 
         self.mu = None
@@ -18,6 +18,7 @@ class GaussianProcessReg():
         self.X = None
         self.obs_noise_stdev = obs_noise_stdev
         self.L = None
+        self.domain_dim = domain_dim
 
         if prior_mean is None:
             prior_mean = lambda x: 0
@@ -65,7 +66,7 @@ class GaussianProcessReg():
             self.y = y_new
 
             # update x-sample vector
-            X_new = np.zeros(self.X.shape[0] + num_samples)
+            X_new = np.zeros((self.X.shape[0] + num_samples, self.domain_dim))
             X_new[:-num_samples] = self.X
             X_new[-num_samples:] = Xsamples
             self.X = X_new
@@ -88,10 +89,18 @@ class GaussianProcessReg():
         # print("L shape "+str(self.L_transp.shape))
 
         y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
-
         alpha = solve_triangular(self.L.T, solve_triangular(self.L, y_shifted, lower=True), lower=False)  # following nomenclature in Rasmussen
+
+        # print("y shape: " + str(y_shifted.shape))
+        # print("test-train covs shape: " + str(test_train_covs.shape))
+        # print("alpha shape: " + str(alpha.shape))
+
         pred_mu = np.matmul(test_train_covs.T, alpha)
         pred_mu += self.prior_mean(Xsamples, **self.prior_mean_kwargs)
+
+        # print("shape of pred mu " + str(pred_mu.shape))
+
+        pred_mu = np.ndarray.flatten(pred_mu)
         k = self.kernel(Xsamples, Xsamples)
         v = solve_triangular(self.L, test_train_covs, lower=True)
         pred_covs = k - np.matmul(v.T, v)
