@@ -74,8 +74,8 @@ class GaussianProcessReg():
 
         pred_mu = np.matmul(test_train_covs.T, alpha)
         pred_mu += self.prior_mean(Xsamples, **self.prior_mean_kwargs)
-
         pred_mu = np.ndarray.flatten(pred_mu)
+
         k = self.kernel(Xsamples, Xsamples)
         v = solve_triangular(self.L, test_train_covs, lower=True)
         pred_covs = k - np.matmul(v.T, v)
