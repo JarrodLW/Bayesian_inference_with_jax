@@ -65,6 +65,7 @@ class Periodic():
     # \sigma^2\exp(-2\sin^2(\pi\Vert x - x'\Vert/p)/l^2)
 
     def __init__(self, stdev, lengthscale, period, dist='euclidean'):
+
         self.stdev = stdev
         self.lengthscale = lengthscale
         self.period = period

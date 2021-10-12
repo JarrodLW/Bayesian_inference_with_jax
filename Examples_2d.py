@@ -125,7 +125,7 @@ elif optimisation:
         y_vals = np.append(y_vals, actual)
 
         ax.scatter(x_vals[:, 0], x_vals[:, 1], y_vals, color='k')
-        time.sleep(2.)
+        #time.sleep(2.)
 
     print('First best guess: x=' + str(X0[ix]) + ', y=%.3f' % y0[ix])
 

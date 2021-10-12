@@ -13,7 +13,7 @@ from numpy.random import normal
 gaussian_reg_example = False
 optimisation = True
 num_initial_samples = 1
-acq_type = 'EI'  # only needed for optimisation example
+acq_type = 'PI'  # only needed for optimisation example
 prior_mean_func = 'quadratic'
 kernel_type = 'RBF'
 
@@ -98,7 +98,7 @@ if gaussian_reg_example: # TODO: move plotting functionality etc into Utils
 
 elif optimisation:
 
-    num_iters = 5
+    num_iters = 6
     num_samples = 2000
     num_test_points = 1000
     test_points = np.asarray(np.arange(0, 1, 1 / num_test_points)).reshape((num_test_points, domain_dim))
@@ -114,6 +114,9 @@ elif optimisation:
     elif acq_type == 'UCB':
         margin = None
         std_weight = 1.
+
+    # fig, (ax1, ax2) = plt.subplots(1, 2)
+    # fig.suptitle('Horizontally stacked subplots')
 
     for i in range(num_iters):
         # select the next point to sample
@@ -133,16 +136,34 @@ elif optimisation:
         mu, covs = model.predict(test_points)
         stds = np.sqrt(np.diagonal(covs))
 
+        # plotting the acquisition function
+        samples = np.arange(0, 1, 1/100).reshape((100, 1))
+
+        if acq_type == 'PI':
+            scores = PI_acquisition(margin, samples, model)
+
+        elif acq_type == 'EI':
+            scores = EI_acquisition(margin, samples, model)
+
+        elif acq_type == 'UCB':
+            scores = UCB_acquisition(std_weight, samples, model)
+
         plt.clf()
-        plt.ylim(-0.1, 1.)
-        #plot(model.X, model.y, model, objective)
         plt.scatter(np.ndarray.flatten(x_vals), y_vals)
         plt.plot(np.ndarray.flatten(test_points), mu)
         plt.plot(np.ndarray.flatten(test_points), y_vals_no_noise)
         plt.fill_between(np.ndarray.flatten(test_points), mu - stds, mu + stds, alpha=0.4)
+        plt.title("t="+str(i))
+        plt.savefig("/Users/jlw31/Desktop/Images for presentation/Image_"+str(i)+".pdf")
+
+        # plt.show()
+
+        #ax2.clf()
+        #ax2.ylim(0., 1.)
+        #ax2.plot(samples, scores)
+
         plt.pause(1e-17)
         time.sleep(2.)
-        # plt.show()
 
         # print("Iter " + str(i) + " successful")
 
