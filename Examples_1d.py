@@ -63,7 +63,7 @@ elif prior_mean_func == 'quadratic':
                                    prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
 
-def objective(x, noise=0.01):
+def objective(x, noise=0.05):
     noise = normal(loc=0, scale=noise)
     return np.ndarray.flatten((x ** 2 * np.sin(5 * np.pi * x) ** 6.0) + noise)
 
@@ -120,18 +120,23 @@ elif optimisation:
 
     if acq_type == 'EI' or acq_type == 'PI':
         margin = 0.01
-        std_weight = None
+        #std_weight = None
+        kwargs = {'margin': margin}
 
     elif acq_type == 'UCB':
-        margin = None
+        #margin = None
         std_weight = 1.
+        kwargs = {'std_weight': std_weight}
 
     # fig, (ax1, ax2) = plt.subplots(1, 2)
     # fig.suptitle('Horizontally stacked subplots')
 
+    acq_func = acq_func_builder(acq_type, **kwargs)
+    #acq_func = acq_func_builder('EI', margin=0.1) + acq_func_builder('PI', margin=0.1)
+
     for i in range(num_iters):
         # select the next point to sample
-        x = opt_acquisition(acq_type, model, num_samples, margin=margin, std_weight=std_weight)
+        x = opt_acquisition(acq_func, model, num_samples) #, margin=margin, std_weight=std_weight)
 
         # sample the point
         actual = objective(x)
@@ -151,13 +156,13 @@ elif optimisation:
         samples = np.arange(0, 1, 1/100).reshape((100, 1))
 
         if acq_type == 'PI':
-            scores = PI_acquisition(margin, samples, model)
+            scores = PI_acquisition(samples, model, margin)
 
         elif acq_type == 'EI':
-            scores = EI_acquisition(margin, samples, model)
+            scores = EI_acquisition(samples, model, margin)
 
         elif acq_type == 'UCB':
-            scores = UCB_acquisition(std_weight, samples, model)
+            scores = UCB_acquisition(samples, model, std_weight)
 
         plt.clf()
         plt.scatter(np.ndarray.flatten(x_vals), y_vals)

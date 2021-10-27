@@ -6,11 +6,33 @@ from scipy.stats import norm
 from scipy.spatial import distance
 from scipy.special import gamma, kv
 
-def PI_acquisition(margin, Xsamples, model):
+
+# acquisition functions
+
+class base_func:
+
+    # class structure for algebra of functions
+
+    def __init__(self, function):
+        self.function = function
+
+    def __call__(self, x: np.array, model):
+        print("base func call :" + str(type(model)))
+        return self.function(x, model)
+
+    def __add__(self, g):
+        return base_func(lambda x, model: self.function(x, model) + g(x, model))
+
+    def __rmul__(self, lam):
+        return base_func(lambda x, model: lam*self.function(x, model))
+
+
+def PI_acquisition(Xsamples, model, margin):
     # isn't there a closed-form solution for the optimal sampling point?
     # calculate the best surrogate score found so far
     #yhat, _ = model.predict(model.X)
     #best = np.amax(yhat)  # is this the correct value to be using? Highest surrogate value versus highest observed...
+
     best = np.amax(model.y)
     best_plus_margin = best + margin
     # calculate mean and stdev via surrogate function
@@ -22,7 +44,7 @@ def PI_acquisition(margin, Xsamples, model):
     return probs
 
 
-def EI_acquisition(margin, Xsamples, model):
+def EI_acquisition(Xsamples, model, margin):
 
     best = np.amax(model.y)
     best_plus_margin = best + margin
@@ -34,7 +56,7 @@ def EI_acquisition(margin, Xsamples, model):
     return scores
 
 
-def UCB_acquisition(std_weight, Xsamples, model):
+def UCB_acquisition(Xsamples, model, std_weight):
 
     mu, covs = model.predict(Xsamples)
     std = np.sqrt(np.diag(covs))
@@ -42,6 +64,22 @@ def UCB_acquisition(std_weight, Xsamples, model):
 
     return scores
 
+
+def acq_func_builder(method, *args, **kwargs):
+
+    if method=='PI':
+        f = lambda x, model: PI_acquisition(x, model, *args, **kwargs)
+        return base_func(f)
+
+    elif method == 'EI':
+        f = lambda x, model: EI_acquisition(x, model, *args, **kwargs)
+        return base_func(f)
+
+    elif method=='UCB':
+        f = lambda x, model: UCB_acquisition(x, model, *args, **kwargs)
+        return base_func(f)
+
+# kernels
 
 class RBF():
 
