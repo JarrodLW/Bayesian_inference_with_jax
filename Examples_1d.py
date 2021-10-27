@@ -25,6 +25,9 @@ if prior_mean_func is None:
     elif kernel_type == 'Periodic':
         model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2)
 
+    elif kernel_type == 'Matern':
+        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=4)
+
 elif prior_mean_func == 'linear':
 
     def linear(x, a, b):
@@ -38,6 +41,10 @@ elif prior_mean_func == 'linear':
         model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2,
                                    prior_mean=linear, prior_mean_kwargs={'a': 0.5, 'b': 0})
 
+    elif kernel_type == 'Matern':
+        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=4,
+                                   prior_mean=linear, prior_mean_kwargs={'a': 0.5, 'b': 0})
+
 elif prior_mean_func == 'quadratic':
 
     def quadratic(x, a, b, c):
@@ -49,6 +56,10 @@ elif prior_mean_func == 'quadratic':
 
     elif kernel_type == 'Periodic':
         model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2,
+                                   prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+
+    elif kernel_type == 'Matern':
+        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=4,
                                    prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
 

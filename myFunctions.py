@@ -4,7 +4,7 @@
 import numpy as np
 from scipy.stats import norm
 from scipy.spatial import distance
-
+from scipy.special import gamma, kv
 
 def PI_acquisition(margin, Xsamples, model):
     # isn't there a closed-form solution for the optimal sampling point?
@@ -75,6 +75,29 @@ class Periodic():
 
         covs = self.stdev ** 2 * np.exp(-2*np.sin(np.pi*distance.cdist(X1, X2, self.dist)/self.period)**2
                                         / self.lengthscale ** 2)
+
+        return covs
+
+
+class Matern():
+
+    # \sigma^2*(2**(1-nu)/Gamma(nu))*(sqrt(2*nu)*\Vert x - x'\Vert/l)**nu*K_nu(sqrt(2*nu)*\Vert x - x'\Vert/l)
+    # nu is the "order"
+    # K_nu is the modified Bessel function of the second kind
+
+    def __init__(self, stdev, lengthscale, order, dist='euclidean'):
+
+        self.stdev = stdev
+        self.lengthscale = lengthscale
+        self.order = order
+        self.dist = dist
+
+    def __call__(self, X1, X2): #TODO: get rid of hack used to deal with infinities of Bessel func.
+
+        rescaled_dist = np.sqrt(2*self.order)*distance.cdist(X1, X2, self.dist)/self.lengthscale
+        print(rescaled_dist)
+        covs = self.stdev ** 2 * (2**(1-self.order)/gamma(self.order))*(rescaled_dist**self.order)\
+               *np.nan_to_num(kv(self.order, rescaled_dist))
 
         return covs
 

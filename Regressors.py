@@ -2,14 +2,14 @@
 
 import numpy as np
 from scipy.linalg import cholesky, solve_triangular
-from myFunctions import RBF, Periodic
+from myFunctions import RBF, Periodic, Matern
 
 
 class GaussianProcessReg():
     # instance is a Gaussian process model with prescribed prior, with fit and predict methods.
 
     def __init__(self, kernel_type='RBF', domain_dim=1, sigma=1., obs_noise_stdev=0.1, lengthscale=1.0, period=None,
-                 prior_mean=None, prior_mean_kwargs=None): #TODO: rename obs_noise_stdev and sigma
+                 order=None, prior_mean=None, prior_mean_kwargs=None): #TODO: rename obs_noise_stdev and sigma
 
         self.mu = None
         self.std = None
@@ -35,6 +35,9 @@ class GaussianProcessReg():
 
         elif kernel_type == 'Periodic':
             self.kernel = Periodic(sigma, lengthscale, period)
+
+        elif kernel_type == 'Matern':
+            self.kernel = Matern(sigma, lengthscale, order)
 
     def fit(self, Xsamples, ysamples, compute_cov=False):
 
