@@ -13,7 +13,7 @@ from numpy.random import normal
 gaussian_reg_example = False
 optimisation = True
 num_initial_samples = 1
-acq_type = 'PI'  # only needed for optimisation example
+acq_type = 'EI'  # only needed for optimisation example
 prior_mean_func = 'quadratic'
 kernel_type = 'RBF'
 
@@ -26,7 +26,7 @@ if prior_mean_func is None:
         model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2)
 
     elif kernel_type == 'Matern':
-        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=4)
+        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=1.5)
 
 elif prior_mean_func == 'linear':
 
@@ -42,7 +42,7 @@ elif prior_mean_func == 'linear':
                                    prior_mean=linear, prior_mean_kwargs={'a': 0.5, 'b': 0})
 
     elif kernel_type == 'Matern':
-        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=4,
+        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=1.5,
                                    prior_mean=linear, prior_mean_kwargs={'a': 0.5, 'b': 0})
 
 elif prior_mean_func == 'quadratic':
@@ -59,7 +59,7 @@ elif prior_mean_func == 'quadratic':
                                    prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
     elif kernel_type == 'Matern':
-        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=4,
+        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=1.5,
                                    prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
 
@@ -132,7 +132,7 @@ elif optimisation:
     # fig.suptitle('Horizontally stacked subplots')
 
     acq_func = acq_func_builder(acq_type, **kwargs)
-    #acq_func = acq_func_builder('EI', margin=0.1) + acq_func_builder('PI', margin=0.1)
+    #acq_func = acq_func_builder('EI', margin=0.1) + 2.*acq_func_builder('PI', margin=0.1) + 5*acq_func_builder('UCB', std_weight=0.05)
 
     for i in range(num_iters):
         # select the next point to sample
