@@ -30,7 +30,7 @@ acq_func = 0.1*pi + 0.5*ei + 0.02*ucb
 num_iters = 5
 domain_dim = 1
 # initialising
-X0 = np.asarray(0.5).reshape((1, domain_dim))
+X0 = np.asarray(0.2).reshape((1, domain_dim))
 y0 = objective(X0)
 model.fit(X0, y0, compute_cov=True)
 

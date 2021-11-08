@@ -11,7 +11,7 @@ from scipy.special import gamma, kv
 
 class base_func:
 
-    # class structure for algebra of functions
+    # class structure for algebra of acquisition functions
 
     def __init__(self, function):
         self.function = function
@@ -81,43 +81,52 @@ def acq_func_builder(method, *args, **kwargs):
 
 # kernels
 
-class RBF():
+
+class kernels():
+
+    def __init__(self, cov_func):
+        self.cov_func = cov_func
+
+    def __call__(self, x1: np.array, x2: np.array):
+        return self.cov_func(x1, x2)
+
+    def __add__(self, g):
+        return kernels(lambda x1, x2: self.cov_func(x1, x2) + g(x1, x2))
+
+    def __rmul__(self, lam):
+        return kernels(lambda x1, x2: lam*self.cov_func(x1, x2))
+
+    def __mul__(self, g):
+        return kernels(lambda x1, x2: self.cov_func(x1, x2)*g(x1, x2))
+
+
+class RBF(kernels):
 
     # \sigma^2\exp(-\Vert x - x'\Vert^2/2l**2)
 
     def __init__(self, stdev, lengthscale, dist='euclidean'):
 
-        self.stdev = stdev
-        self.lengthscale = lengthscale
-        self.dist = dist
+        def cov_func(x1, x2):
+            return stdev ** 2 * np.exp(-0.5*distance.cdist(x1, x2, dist)**2 / lengthscale ** 2)
 
-    def __call__(self, X1, X2):
-
-        covs = self.stdev ** 2 * np.exp(-0.5*distance.cdist(X1, X2, self.dist)**2 / self.lengthscale ** 2)
-
-        return covs
+        super().__init__(cov_func)
 
 
-class Periodic():
+class Periodic(kernels):
 
     # \sigma^2\exp(-2\sin^2(\pi\Vert x - x'\Vert/p)/l^2)
 
     def __init__(self, stdev, lengthscale, period, dist='euclidean'):
 
-        self.stdev = stdev
-        self.lengthscale = lengthscale
-        self.period = period
-        self.dist = dist
+        def cov_func(x1, x2):
+            covs = stdev ** 2 * np.exp(-2*np.sin(np.pi*distance.cdist(x1, x2, dist)/period)**2
+                                        / lengthscale ** 2)
+            return covs
 
-    def __call__(self, X1, X2):
-
-        covs = self.stdev ** 2 * np.exp(-2*np.sin(np.pi*distance.cdist(X1, X2, self.dist)/self.period)**2
-                                        / self.lengthscale ** 2)
-
-        return covs
+        super().__init__(cov_func)
 
 
-class Matern():
+class Matern(kernels):
 
     # \sigma^2*(2**(1-nu)/Gamma(nu))*(sqrt(2*nu)*\Vert x - x'\Vert/l)**nu*K_nu(sqrt(2*nu)*\Vert x - x'\Vert/l)
     # nu is the "order"
@@ -125,18 +134,12 @@ class Matern():
 
     def __init__(self, stdev, lengthscale, order, dist='euclidean'):
 
-        self.stdev = stdev
-        self.lengthscale = lengthscale
-        self.order = order
-        self.dist = dist
+        def cov_func(x1, x2):
+            rescaled_dist = np.sqrt(2 * order) * distance.cdist(x1, x2, dist) / lengthscale
+            rescaled_dist = np.maximum(1.e-8, rescaled_dist)
+            covs = stdev ** 2 * (2 ** (1 - order) / gamma(order)) * (rescaled_dist ** order) \
+                   * kv(order, rescaled_dist)
+            return covs
 
-    def __call__(self, X1, X2): #TODO: get rid of hack used to deal with infinities of Bessel func.
-
-        rescaled_dist = np.sqrt(2*self.order)*distance.cdist(X1, X2, self.dist)/self.lengthscale
-        print(rescaled_dist)
-        covs = self.stdev ** 2 * (2**(1-self.order)/gamma(self.order))*(rescaled_dist**self.order)\
-               *np.nan_to_num(kv(self.order, rescaled_dist))
-
-        return covs
-
+        super().__init__(cov_func)
 

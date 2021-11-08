@@ -15,7 +15,7 @@ optimisation = True
 num_initial_samples = 1
 acq_type = 'EI'  # only needed for optimisation example
 prior_mean_func = 'quadratic'
-kernel_type = 'RBF'
+kernel_type = 'Matern'
 
 if prior_mean_func is None:
 
@@ -26,7 +26,7 @@ if prior_mean_func is None:
         model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2)
 
     elif kernel_type == 'Matern':
-        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=1.5)
+        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=4.5)
 
 elif prior_mean_func == 'linear':
 
@@ -42,7 +42,7 @@ elif prior_mean_func == 'linear':
                                    prior_mean=linear, prior_mean_kwargs={'a': 0.5, 'b': 0})
 
     elif kernel_type == 'Matern':
-        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=1.5,
+        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=4.5,
                                    prior_mean=linear, prior_mean_kwargs={'a': 0.5, 'b': 0})
 
 elif prior_mean_func == 'quadratic':
@@ -54,16 +54,20 @@ elif prior_mean_func == 'quadratic':
         model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
                                    prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
+    # if kernel_type == 'RBF':
+    #     model = GaussianProcessReg(sigma=0.1, lengthscale=0.01, obs_noise_stdev=0.01, prior_mean=quadratic,
+    #                                prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+
     elif kernel_type == 'Periodic':
         model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2,
                                    prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
     elif kernel_type == 'Matern':
-        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=1.5,
+        model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, order=4.5,
                                    prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
 
-def objective(x, noise=0.05):
+def objective(x, noise=0.01):
     noise = normal(loc=0, scale=noise)
     return np.ndarray.flatten((x ** 2 * np.sin(5 * np.pi * x) ** 6.0) + noise)
 
@@ -98,6 +102,9 @@ if gaussian_reg_example: # TODO: move plotting functionality etc into Utils
         mu, covs = model.predict(test_points)
         stds = np.sqrt(np.diagonal(covs))
 
+        predictions_mu[i] = mu
+        predictions_std_squared[i] = np.diag(covs)
+
         plt.clf()
         plt.ylim(-0.2, 1.0)
         plt.scatter(np.ndarray.flatten(x_vals), y_vals)
@@ -106,6 +113,18 @@ if gaussian_reg_example: # TODO: move plotting functionality etc into Utils
         plt.fill_between(np.ndarray.flatten(test_points), mu - stds, mu + stds, alpha=0.4)
         plt.pause(1e-17)
         time.sleep(0.5)
+
+    predictions_std = np.sqrt(predictions_std_squared)
+
+    f, axarr = plt.subplots(2, 3, sharex=True, sharey=True, figsize=(12, 8))
+    for i in range(6):
+        # plt.clf()
+        axarr[i // 3, i % 3].scatter(np.ndarray.flatten(x_vals)[:5*i + 1], y_vals[:5*i + 1])
+        axarr[i // 3, i % 3].plot(np.ndarray.flatten(test_points), predictions_mu[5*i])
+        axarr[i // 3, i % 3].plot(np.ndarray.flatten(test_points), y_vals_no_noise)
+        axarr[i // 3, i % 3].fill_between(np.ndarray.flatten(test_points), predictions_mu[5*i] - predictions_std[5*i],
+                                          predictions_mu[5*i] + predictions_std[5*i], alpha=0.4)
+        axarr[i // 3, i % 3].set_title("t=" + str(5*i))
 
 elif optimisation:
 

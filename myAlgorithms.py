@@ -38,7 +38,6 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, num_samples=1000,
     y_vals = y0
     ix = np.argmax(y0)
 
-    test_points = np.asarray(np.arange(0, 1, 1 / 1000)).reshape((1000, x_vals.shape[1]))  # TODO: remove hard-coding
 
     if return_surrogates:
         surrogate_means = np.zeros((num_iters, 1000))
@@ -59,10 +58,10 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, num_samples=1000,
         x_vals = np.append(x_vals, x, axis=0)
         y_vals = np.append(y_vals, actual)
 
-        mu, covs = model.predict(test_points) # TODO: needn't compute these if not returning surrogate or plotting
-        stds = np.sqrt(np.diagonal(covs))
-
         if return_surrogates:
+            test_points = np.asarray(np.arange(0, 1, 1 / 1000)).reshape((1000, x_vals.shape[1]))
+            mu, covs = model.predict(test_points)  # TODO: needn't compute these if not returning surrogate or plotting
+            stds = np.sqrt(np.diagonal(covs))
             surrogate_means[i, :] = mu
             surrogate_stds[i, :] = stds
 

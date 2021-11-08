@@ -17,11 +17,19 @@ acq_type = 'EI'
 num_initial_samples = 30
 
 prior_mean_func = None
+#prior_mean_func = 'quadratic'
+
+def quadratic(x, a, b, c):
+    return np.ndarray.flatten(a * x ** 2 + b * x + c)
 
 if prior_mean_func is None:
-    model = GaussianProcessReg(kernel_type='Periodic', domain_dim=2, sigma=0.05, lengthscale=0.1,
-                               obs_noise_stdev=0.01, period=4)
+    model = GaussianProcessReg(kernel_type='RBF', domain_dim=2, sigma=0.05, lengthscale=0.1,
+                               obs_noise_stdev=0.01)
 
+elif prior_mean_func == 'quadratic':
+    model = GaussianProcessReg(kernel_type='RBF', domain_dim=2, sigma=0.05, lengthscale=0.1,
+                               obs_noise_stdev=0.01, prior_mean=quadratic,
+                                   prior_mean_kwargs={'a': -1., 'b': 1., 'c': 1})
 
 def objective(x, noise=0.05):
     noise = normal(loc=0, scale=noise)
@@ -86,7 +94,7 @@ if gaussian_reg_example: # TODO: move plotting functionality etc into Utils
 
 elif optimisation:
 
-    iters = 10
+    iters = 5
     num_samples = 2000
     sqrt_num_test_points = 100
     num_test_points = sqrt_num_test_points ** 2
@@ -103,15 +111,19 @@ elif optimisation:
 
     if acq_type == 'EI' or 'PI':
         margin = 0.01
+        kwargs = {'margin': margin}
 
     fig = plt.figure()
     ax = fig.add_subplot(projection='3d')
     ax.plot_surface(x_0, x_1, y_vals_no_noise.reshape((sqrt_num_test_points, sqrt_num_test_points)), alpha=0.5,
                     color='y')
 
+    acq_func = acq_func_builder(acq_type, **kwargs)
+
     for i in range(iters):
         # select the next point to sample
-        x = opt_acquisition(acq_type, model, num_samples, margin=0.01)
+        #x = opt_acquisition(acq_type, model, num_samples, margin=0.01)
+        x = opt_acquisition(acq_func, model, num_samples)
 
         # sample the point
         actual = objective(x)
