@@ -1,9 +1,10 @@
 # Created 06/10/2021
 # includes acquisition functions and kernels...
 
+import jax.numpy as jnp
 import numpy as np
-from scipy.stats import norm
-from scipy.spatial import distance
+from jax.scipy.stats import norm
+#from scipy.spatial import distance
 from scipy.special import gamma, kv
 
 
@@ -33,11 +34,11 @@ def PI_acquisition(Xsamples, model, margin):
     #yhat, _ = model.predict(model.X)
     #best = np.amax(yhat)  # is this the correct value to be using? Highest surrogate value versus highest observed...
 
-    best = np.amax(model.y)
+    best = jnp.amax(model.y)
     best_plus_margin = best + margin
     # calculate mean and stdev via surrogate function
     mu, covs = model.predict(Xsamples)
-    std = np.sqrt(np.diag(covs))
+    std = jnp.sqrt(jnp.diag(covs))
     # calculate the probability of improvement
     probs = norm.cdf((mu - best_plus_margin) / (std + 1E-20))
 
@@ -100,6 +101,22 @@ class kernels():
         return kernels(lambda x1, x2: self.cov_func(x1, x2)*g(x1, x2))
 
 
+def pairwise_distances(x1, x2, dist):
+
+    height = x1.shape[0]
+    width = x2.shape[0]
+    dm = jnp.zeros((height, width))
+
+    if dist=='euclidean':
+        for i in range(height):
+            for j in range(width):
+                dm = dm.at[(i, j)].set(jnp.linalg.norm(x1[i, :] - x2[j, :]))
+    else:
+        raise NotImplementedError("Distance function not implemented")
+
+    return dm
+
+
 class RBF(kernels):
 
     # \sigma^2\exp(-\Vert x - x'\Vert^2/2l**2)
@@ -107,7 +124,7 @@ class RBF(kernels):
     def __init__(self, stdev, lengthscale, dist='euclidean'):
 
         def cov_func(x1, x2):
-            return stdev ** 2 * np.exp(-0.5*distance.cdist(x1, x2, dist)**2 / lengthscale ** 2)
+            return stdev ** 2 * jnp.exp(-0.5*pairwise_distances(x1, x2, dist)**2 / lengthscale ** 2)
 
         super().__init__(cov_func)
 
@@ -119,7 +136,7 @@ class Periodic(kernels):
     def __init__(self, stdev, lengthscale, period, dist='euclidean'):
 
         def cov_func(x1, x2):
-            covs = stdev ** 2 * np.exp(-2*np.sin(np.pi*distance.cdist(x1, x2, dist)/period)**2
+            covs = stdev ** 2 * jnp.exp(-2*jnp.sin(np.pi*pairwise_distances(x1, x2, dist)/period)**2
                                         / lengthscale ** 2)
             return covs
 
@@ -135,8 +152,8 @@ class Matern(kernels):
     def __init__(self, stdev, lengthscale, order, dist='euclidean'):
 
         def cov_func(x1, x2):
-            rescaled_dist = np.sqrt(2 * order) * distance.cdist(x1, x2, dist) / lengthscale
-            rescaled_dist = np.maximum(1.e-8, rescaled_dist)
+            rescaled_dist = jnp.sqrt(2 * order) * pairwise_distances(x1, x2, dist) / lengthscale
+            rescaled_dist = jnp.maximum(1.e-8, rescaled_dist) # How does this interact with jax grad?
             covs = stdev ** 2 * (2 ** (1 - order) / gamma(order)) * (rescaled_dist ** order) \
                    * kv(order, rescaled_dist)
             return covs

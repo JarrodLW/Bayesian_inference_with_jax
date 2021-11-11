@@ -13,7 +13,7 @@ from numpy.random import normal
 gaussian_reg_example = False
 optimisation = True
 num_initial_samples = 1
-acq_type = 'EI'  # only needed for optimisation example
+acq_type = 'PI'  # only needed for optimisation example
 prior_mean_func = 'quadratic'
 kernel_type = 'Matern'
 
