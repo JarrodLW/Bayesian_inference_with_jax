@@ -28,6 +28,10 @@ class base_func:
         return base_func(lambda x, model: lam*self.function(x, model))
 
 
+# def current_max(model, observed=True):
+#     # returns either the highest observed value so far, or the
+
+
 def PI_acquisition(Xsamples, model, margin):
     # isn't there a closed-form solution for the optimal sampling point?
     # calculate the best surrogate score found so far
@@ -101,11 +105,17 @@ class kernels():
         return kernels(lambda x1, x2: self.cov_func(x1, x2)*g(x1, x2))
 
 
-def pairwise_distances(x1, x2, dist):
+def rescaled_pairwise_dists(x1, x2, lengthscale, dist):
+    # lengthscale: either a scalar or list of same dimension as domain
+    #TODO: add error when lengthscale has length not equal to base dimension?
 
     height = x1.shape[0]
     width = x2.shape[0]
     dm = jnp.zeros((height, width))
+
+    # rescaling
+    x1 /= lengthscale
+    x2 /= lengthscale
 
     if dist=='euclidean':
         for i in range(height):
@@ -124,7 +134,7 @@ class RBF(kernels):
     def __init__(self, stdev, lengthscale, dist='euclidean'):
 
         def cov_func(x1, x2):
-            return stdev ** 2 * jnp.exp(-0.5*pairwise_distances(x1, x2, dist)**2 / lengthscale ** 2)
+            return stdev ** 2 * jnp.exp(-0.5*rescaled_pairwise_dists(x1, x2, lengthscale, dist)**2)
 
         super().__init__(cov_func)
 
@@ -136,8 +146,7 @@ class Periodic(kernels):
     def __init__(self, stdev, lengthscale, period, dist='euclidean'):
 
         def cov_func(x1, x2):
-            covs = stdev ** 2 * jnp.exp(-2*jnp.sin(np.pi*pairwise_distances(x1, x2, dist)/period)**2
-                                        / lengthscale ** 2)
+            covs = stdev ** 2 * jnp.exp(-2*jnp.sin(np.pi*rescaled_pairwise_dists(x1, x2, lengthscale, dist)/period)**2)
             return covs
 
         super().__init__(cov_func)
@@ -152,7 +161,7 @@ class Matern(kernels):
     def __init__(self, stdev, lengthscale, order, dist='euclidean'):
 
         def cov_func(x1, x2):
-            rescaled_dist = jnp.sqrt(2 * order) * pairwise_distances(x1, x2, dist) / lengthscale
+            rescaled_dist = jnp.sqrt(2 * order) * rescaled_pairwise_dists(x1, x2, lengthscale, dist)
             rescaled_dist = jnp.maximum(1.e-8, rescaled_dist) # How does this interact with jax grad?
             covs = stdev ** 2 * (2 ** (1 - order) / gamma(order)) * (rescaled_dist ** order) \
                    * kv(order, rescaled_dist)

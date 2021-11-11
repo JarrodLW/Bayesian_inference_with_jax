@@ -1,8 +1,9 @@
 import numpy as np
 import jax.numpy as jnp
 from jax import grad, jit, vmap
-from myFunctions import PI_acquisition, RBF
+from myFunctions import PI_acquisition, RBF, acq_func_builder
 from Regressors import GaussianProcessReg
+from myAlgorithms import opt_acquisition
 
 
 def tanh(x):  # Define a function
@@ -17,7 +18,7 @@ print(grad_tanh(1.0))   # Evaluate it at x = 1.0
 print(vmap(tanh)(jnp.array([[0.], [1.], [0.5]])))
 print(jit(vmap(tanh))(jnp.array([[0.], [1.], [0.5]])))
 
-# differentiating a non-differntiable function?
+# differentiating a non-differentiable function?
 
 def func1(x):
 
@@ -36,12 +37,21 @@ grad_PI_acquisition = grad(PI_acquisition)
 model = GaussianProcessReg(sigma=0.1, lengthscale=0.2, obs_noise_stdev=0.01)
 # initialising model
 X0 = jnp.asarray([0., 0.1, 0.2, 0.3]).reshape((4, 1))
-y0 = jnp.asarray([5.2, 3.6, 1.5, 1.])
+y0 = jnp.asarray([2.2, 3.6, 1.5, 1.])
 model.fit(X0, y0, compute_cov=True)
 
 Xsamples = jnp.arange(10).reshape((10, 1))/10
 
 print(PI_acquisition(Xsamples, model, 0.))
+
+margin = 0.01
+kwargs = {'margin': margin}
+
+acq_type = 'PI'
+num_samples = 1000
+acq_func = acq_func_builder(acq_type, **kwargs)
+x = opt_acquisition(acq_func, model, num_samples)
+
 grad_PI_acquisition(np.asarray([1.0]).reshape((1, 1)), model, 0.)
 
 

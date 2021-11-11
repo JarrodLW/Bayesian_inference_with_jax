@@ -74,17 +74,11 @@ class GaussianProcessReg():
         test_train_covs = self.kernel(self.X, Xsamples)
 
         y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
-        #print("Shape of y shifted: "+str(y_shifted.shape))
-        #print("Shape solve stepping stone: "+str(solve_triangular(self.L, y_shifted, lower=True).shape))
-        #print(self.L)
-        #print(y_shifted)
         alpha = solve_triangular(self.L.T, solve_triangular(self.L, y_shifted, lower=True), lower=False)  # following nomenclature in Rasmussen
 
         pred_mu = jnp.matmul(test_train_covs.T, alpha)
         pred_mu += self.prior_mean(Xsamples, **self.prior_mean_kwargs)
         #pred_mu = np.ndarray.flatten(pred_mu) # what to do here?
-
-        #print("Shape of test-train covs: "+str(test_train_covs.shape))
 
         k = self.kernel(Xsamples, Xsamples)
         v = solve_triangular(self.L, test_train_covs, lower=True)

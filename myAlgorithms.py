@@ -1,5 +1,6 @@
 # Created
 
+import jax.numpy as jnp
 import numpy as np
 import matplotlib.pyplot as plt
 import time
@@ -13,7 +14,7 @@ def opt_acquisition(acq_func, model, num_samples): #, std_weight=1., margin=None
     Xsamples = np.random.random((num_samples, domain_dim))
     scores = acq_func(Xsamples, model)
     # locate the index of the largest scores
-    ix = np.argmax(scores)
+    ix = jnp.argmax(scores)
 
     print("Best score " + str(np.amax(scores)))
 
