@@ -41,7 +41,7 @@ grad_PI_acquisition = grad(PI_acquisition)
 model = GaussianProcessReg(sigma=0.2, lengthscale=0.2, obs_noise_stdev=0.1)
 # initialising model
 X0 = jnp.arange(5).reshape((5, 1))/5
-y0 = jnp.array([0.6, 2.4, 3.1, 0.5, 3.6])
+y0 = jnp.array([0.6, 2.4, 3.1, 4.2, 3.6])
 model.fit(X0, y0, compute_cov=True)
 
 Xsamples = jnp.arange(50).reshape((50, 1))/50
