@@ -14,7 +14,8 @@ gaussian_reg_example = False
 optimisation = True
 num_initial_samples = 1
 acq_type = 'PI'  # only needed for optimisation example
-prior_mean_func = 'quadratic'
+#prior_mean_func = 'quadratic'
+prior_mean_func = None
 kernel_type = 'Matern'
 
 if prior_mean_func is None:

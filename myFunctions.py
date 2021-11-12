@@ -108,23 +108,26 @@ class kernels():
 def rescaled_pairwise_dists(x1, x2, lengthscale, dist):
     # lengthscale: either a scalar or list of same dimension as domain
     #TODO: add error when lengthscale has length not equal to base dimension?
+    # Note: there some to be larger errors than I'd expect
 
-    height = x1.shape[0]
-    width = x2.shape[0]
-    dm = jnp.zeros((height, width))
+    # height = x1.shape[0]
+    # width = x2.shape[0]
+    #dm = jnp.zeros((height, width))
 
     # rescaling
-    x1 /= lengthscale
-    x2 /= lengthscale
+    x1 = x1/lengthscale
+    x2 = x2/lengthscale
 
-    if dist=='euclidean':
-        for i in range(height):
-            for j in range(width):
-                dm = dm.at[(i, j)].set(jnp.linalg.norm(x1[i, :] - x2[j, :]))
+    if dist == 'euclidean':
+        # for i in range(height):
+        #     for j in range(width):
+        #         dm = dm.at[(i, j)].set(jnp.linalg.norm(x1[i, :] - x2[j, :]))
+        squared_dm = jnp.linalg.norm(x1, axis=1)[:, None]**2 + jnp.linalg.norm(x2, axis=1)**2 - 2*jnp.matmul(x1, x2.T)
+
     else:
         raise NotImplementedError("Distance function not implemented")
 
-    return dm
+    return jnp.sqrt(squared_dm)
 
 
 class RBF(kernels):

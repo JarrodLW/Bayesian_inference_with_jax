@@ -4,6 +4,7 @@
 import jax.numpy as jnp
 from jax.scipy.linalg import cholesky, solve_triangular
 from myFunctions import RBF, Periodic, Matern
+from time import time
 
 
 class GaussianProcessReg():
@@ -71,6 +72,8 @@ class GaussianProcessReg():
     def predict(self, Xsamples):  # TODO generalise this to allow for multiple sampling points
         # should I be saving the mu and std to memory?
 
+        t0 = time()
+
         test_train_covs = self.kernel(self.X, Xsamples)
 
         y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
@@ -80,7 +83,12 @@ class GaussianProcessReg():
         pred_mu += self.prior_mean(Xsamples, **self.prior_mean_kwargs)
         #pred_mu = np.ndarray.flatten(pred_mu) # what to do here?
 
+        t1 = time()
         k = self.kernel(Xsamples, Xsamples)
+        t2 = time()
+
+        print("time computing kernel: " + str(t2 - t1))
+
         v = solve_triangular(self.L, test_train_covs, lower=True)
         pred_covs = k - jnp.matmul(v.T, v)
         #pred_std = np.sqrt(np.abs(np.diag(pred_covs)))
@@ -89,6 +97,9 @@ class GaussianProcessReg():
         print("failure to invert " +
               str(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, alpha)) - y_shifted)))/
                   jnp.sqrt(jnp.sum(jnp.square(y_shifted)))))
+
+        t_end = time()
+        print("total predict time: "+str(t_end-t0))
 
         return pred_mu, pred_covs
 
