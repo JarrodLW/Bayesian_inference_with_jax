@@ -69,10 +69,10 @@ class GaussianProcessReg():
         print("failure to factorise " + str(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, self.L.T) - covs_plus_noise)))
               /jnp.sqrt(jnp.sum(jnp.square(covs_plus_noise)))))
 
-    def predict(self, Xsamples):  # TODO generalise this to allow for multiple sampling points
+    def predict(self, Xsamples):
         # should I be saving the mu and std to memory?
 
-        t0 = time()
+        #t0 = time()
 
         test_train_covs = self.kernel(self.X, Xsamples)
 
@@ -83,11 +83,11 @@ class GaussianProcessReg():
         pred_mu += self.prior_mean(Xsamples, **self.prior_mean_kwargs)
         #pred_mu = np.ndarray.flatten(pred_mu) # what to do here?
 
-        t1 = time()
+        #t1 = time()
         k = self.kernel(Xsamples, Xsamples)
-        t2 = time()
+        #t2 = time()
 
-        print("time computing kernel: " + str(t2 - t1))
+        #print("time computing kernel: " + str(t2 - t1))
 
         v = solve_triangular(self.L, test_train_covs, lower=True)
         pred_covs = k - jnp.matmul(v.T, v)
@@ -98,8 +98,8 @@ class GaussianProcessReg():
               str(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, alpha)) - y_shifted)))/
                   jnp.sqrt(jnp.sum(jnp.square(y_shifted)))))
 
-        t_end = time()
-        print("total predict time: "+str(t_end-t0))
+        #t_end = time()
+        #print("total predict time: "+str(t_end-t0))
 
         return pred_mu, pred_covs
 

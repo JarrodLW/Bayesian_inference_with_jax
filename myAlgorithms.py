@@ -15,9 +15,7 @@ def opt_acquisition(acq_func, model, num_samples): #, std_weight=1., margin=None
     scores = acq_func(Xsamples, model)
     # locate the index of the largest scores
     ix = jnp.argmax(scores)
-
     print("Best score " + str(np.amax(scores)))
-
     return Xsamples[ix].reshape(1, domain_dim)
 
 
