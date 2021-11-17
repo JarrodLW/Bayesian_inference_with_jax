@@ -4,10 +4,85 @@ import jax.numpy as jnp
 import numpy as np
 import matplotlib.pyplot as plt
 import time
+import optax
+import jax
 from myFunctions import PI_acquisition, EI_acquisition, UCB_acquisition
 
 
-def opt_acquisition(acq_func, model, num_samples): #, std_weight=1., margin=None):  # TODO allow for multiple points to be kept
+class optax_acq_alg:
+    # More generally, could pass a more complicated optimisation schedule?
+    def __init__(self, optimizer, iters=1000):
+        self.optimizer = optimizer
+        self.iters = iters
+
+    def __call__(self, acq_func, model, init):
+        ## builds optax gradient-based algorithm for optimisation of acquisition function
+        # acq_func(x, model) -> \mathbb{R}, a pure function,
+        # model: a regressor class instance,
+        # optimizer: an optax optimizer e.g. optax.adam(learning_rate=1e-2)
+        # init: where to initialise the optimisation
+        # TODO: use previous opt as new initialisation
+        # TODO: assert error if init inconsistent with model dimension
+
+        # we take the negative of the acquisition function since optax algs designed to minimise rather than maximise
+        def objective(x):
+            return - acq_func(x, model)  # this can probably be avoided by using partial derivatives instead. Do I need to "build" everytime?
+
+        def optimization(x: optax.Params) -> optax.Params:
+            opt_state = self.optimizer.init(x)
+
+            @jax.jit
+            def step(x, opt_state):
+                loss_value, grads = jax.value_and_grad(objective)(x)
+                updates, opt_state = self.optimizer.update(grads, opt_state, x)
+                x = optax.apply_updates(x, updates)
+                return x, opt_state, loss_value
+
+            for i in range(self.iters):
+                x, opt_state, loss_value = step(x, opt_state)
+                # if i % 100 == 0:
+                #     print(f'step {i}, loss: {loss_value}')
+            return x
+
+        x_opt = optimization(init)
+        return x_opt
+
+
+
+# def optax_acq(acq_func, model, optimizer, init, iters=1000):
+#     ## builds optax gradient-based algorithm for optimisation of acquisition function
+#     # acq_func(x, model) -> \mathbb{R}, a pure function,
+#     # model: a regressor class instance,
+#     # optimizer: an optax optimizer e.g. optax.adam(learning_rate=1e-2)
+#     # init: where to initialise the optimisation
+#
+#     # we take the negative of the acquisition function since optax algs designed to minimise rather than maximise
+#     def objective(x):
+#         return - acq_func(x, model) # this can probably be avoided by using partial derivatives instead. Do I need to "build" everytime?
+#
+#     def optimization(x: optax.Params, optimizer: optax.GradientTransformation) -> optax.Params:
+#         opt_state = optimizer.init(x)
+#
+#         @jax.jit
+#         def step(x, opt_state):
+#             loss_value, grads = jax.value_and_grad(objective)(x)
+#             updates, opt_state = optimizer.update(grads, opt_state, x)
+#             x = optax.apply_updates(x, updates)
+#             return x, opt_state, loss_value
+#
+#         for i in range(iters):
+#             x, opt_state, loss_value = step(x, opt_state)
+#             # if i % 100 == 0:
+#             #     print(f'step {i}, loss: {loss_value}')
+#
+#         return x
+#
+#     x_opt = optimization(init, optimizer)
+#
+#     return x_opt
+
+
+def random_acq(acq_func, model, num_samples=1000): #, std_weight=1., margin=None):  # TODO allow for multiple points to be kept
     # TODO allow for differing domain geometries
     domain_dim = model.domain_dim
     # random search, generate random samples
@@ -19,13 +94,13 @@ def opt_acquisition(acq_func, model, num_samples): #, std_weight=1., margin=None
     return Xsamples[ix].reshape(1, domain_dim)
 
 
-def opt_routine(acq_func, model, num_iters, X0, y0, objective, num_samples=1000, return_surrogates=False,
-                dynamic_plot=False): #TODO: refactor. This is a mess. Also, plotting functionality will only work in 1d
+def opt_routine(acq_func, model, num_iters, X0, y0, objective, opt_alg=random_acq,
+                return_surrogates=False, dynamic_plot=False):
+    #TODO: refactor. This is a mess. Also, plotting functionality will only work in 1d
 
     x_vals = X0
     y_vals = y0
     ix = np.argmax(y0)
-
 
     if return_surrogates:
         surrogate_means = np.zeros((num_iters, 1000))
@@ -33,7 +108,7 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, num_samples=1000,
 
     for i in range(num_iters):
         # select the next point to sample
-        x = opt_acquisition(acq_func, model, num_samples)
+        x = opt_alg(acq_func, model)
 
         # sample the point
         actual = objective(x)

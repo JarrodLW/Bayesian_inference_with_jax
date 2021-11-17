@@ -5,8 +5,9 @@ import jax.numpy as jnp
 import numpy as np
 import optax
 import matplotlib.pyplot as plt
-from Regressors import GaussianProcessReg
-from myFunctions import PI_acquisition
+from Regressors import *
+from myFunctions import *
+from myAlgorithms import *
 
 ## trying to find maximum of function
 
@@ -34,34 +35,69 @@ elif example_num == 2:
     #initial_params = 0.48
     initial_params = 0.19
 
-# doing optimisation
+    # # doing optimisation
+    #
+    # def fit(x: optax.Params, optimizer: optax.GradientTransformation) -> optax.Params:
+    #     opt_state = optimizer.init(x)
+    #
+    #     @jax.jit
+    #     def step(x, opt_state):
+    #         loss_value, grads = jax.value_and_grad(objective)(x)
+    #         updates, opt_state = optimizer.update(grads, opt_state, x)
+    #         x = optax.apply_updates(x, updates)
+    #         return x, opt_state, loss_value
+    #
+    #     for i in range(1000):
+    #         x, opt_state, loss_value = step(x, opt_state)
+    #         if i % 100 == 0:
+    #             print(f'step {i}, loss: {loss_value}')
+    #
+    #     return x
+    #
+    #
+    # optimizer = optax.adam(learning_rate=1e-2)
+    # x_opt = fit(initial_params, optimizer)
+    #
+    # print("x opt: " + str(x_opt))
+    #
+    # x_vals = jnp.arange(0, 1, 1 / 50)
+    # y_vals = jax.vmap(objective)(x_vals)
+    # plt.plot(np.asarray(x_vals), np.asarray(y_vals))
 
-def fit(x: optax.Params, optimizer: optax.GradientTransformation) -> optax.Params:
-    opt_state = optimizer.init(x)
+    ## same as above (commented) but using opt_alg class
 
-    @jax.jit
-    def step(x, opt_state):
-        loss_value, grads = jax.value_and_grad(objective)(x)
-        updates, opt_state = optimizer.update(grads, opt_state, x)
-        x = optax.apply_updates(x, updates)
-        return x, opt_state, loss_value
+    optimizer = optax.adam(learning_rate=1e-2)
+    acq_alg = optax_acq_alg(optimizer)
+    acq_func = acq_func_builder('PI', margin=0.01)
+    acq_alg(acq_func, model, initial_params)
 
-    for i in range(1000):
-        x, opt_state, loss_value = step(x, opt_state)
-        if i % 100 == 0:
-            print(f'step {i}, loss: {loss_value}')
 
-    return x
 
+## running BayesOpt workflow - example adapted from "Single example" file
+
+model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
+
+# defining acquisition function
+acq_func = acq_func_builder('PI', margin=0.01)
+
+# setting up optimisation
+# setting hyper-parameters
+num_iters = 5
+domain_dim = 1
+# initialising
+X0 = np.asarray(0.2).reshape((1, domain_dim))
+y0 = objective(X0)
+model.fit(X0, y0, compute_cov=True)
 
 optimizer = optax.adam(learning_rate=1e-2)
-x_opt = fit(initial_params, optimizer)
+initial_params = 0.3
+objective =
+def opt_alg(x):
+    return fit(x, optimizer)
 
-print("x opt: " + str(x_opt))
-
-x_vals = jnp.arange(0, 1, 1 / 50)
-y_vals = jax.vmap(objective)(x_vals)
-plt.plot(np.asarray(x_vals), np.asarray(y_vals))
-
-
+# optimisation
+X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective,
+                                   return_surrogates=True, dynamic_plot=True) # random acquisition
+# X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective, return_surrogates=True,
+#                                    opt_alg=opt_alg, dynamic_plot=True)
 

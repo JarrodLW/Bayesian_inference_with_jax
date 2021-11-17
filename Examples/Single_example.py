@@ -16,8 +16,10 @@ def quadratic(x, a, b, c):
 
 
 # defining model
-model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
-                                   prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+# model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
+#                                    prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+
+model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
 
 # defining acquisition function
 pi = acq_func_builder('PI', margin=0.01)
