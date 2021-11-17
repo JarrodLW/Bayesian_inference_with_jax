@@ -6,34 +6,37 @@ import matplotlib.pyplot as plt
 import time
 import optax
 import jax
-from myFunctions import PI_acquisition, EI_acquisition, UCB_acquisition
 
 
-class optax_acq_alg:
+class optax_acq_alg_builder:
     # More generally, could pass a more complicated optimisation schedule?
     def __init__(self, optimizer, iters=1000):
         self.optimizer = optimizer
         self.iters = iters
 
-    def __call__(self, acq_func, model, init):
+    def __call__(self, acq_func, model, init=None):
         ## builds optax gradient-based algorithm for optimisation of acquisition function
         # acq_func(x, model) -> \mathbb{R}, a pure function,
         # model: a regressor class instance,
         # optimizer: an optax optimizer e.g. optax.adam(learning_rate=1e-2)
         # init: where to initialise the optimisation
-        # TODO: use previous opt as new initialisation
         # TODO: assert error if init inconsistent with model dimension
+        # TODO: incorporate other initialisation strategies
+
+        # random initialisation if no init given
+        if init is None:
+            init = jnp.array(np.random.random(model.domain_dim)).reshape((1, model.domain_dim))
 
         # we take the negative of the acquisition function since optax algs designed to minimise rather than maximise
-        def objective(x):
-            return - acq_func(x, model)  # this can probably be avoided by using partial derivatives instead. Do I need to "build" everytime?
+        def acq_objective(x):
+            return - acq_func(jnp.array([x]).reshape((1, model.domain_dim)), model)  # this can probably be avoided by using partial derivatives instead. Do I need to "build" everytime?
 
         def optimization(x: optax.Params) -> optax.Params:
             opt_state = self.optimizer.init(x)
 
             @jax.jit
             def step(x, opt_state):
-                loss_value, grads = jax.value_and_grad(objective)(x)
+                loss_value, grads = jax.value_and_grad(acq_objective)(x)
                 updates, opt_state = self.optimizer.update(grads, opt_state, x)
                 x = optax.apply_updates(x, updates)
                 return x, opt_state, loss_value
@@ -46,40 +49,6 @@ class optax_acq_alg:
 
         x_opt = optimization(init)
         return x_opt
-
-
-
-# def optax_acq(acq_func, model, optimizer, init, iters=1000):
-#     ## builds optax gradient-based algorithm for optimisation of acquisition function
-#     # acq_func(x, model) -> \mathbb{R}, a pure function,
-#     # model: a regressor class instance,
-#     # optimizer: an optax optimizer e.g. optax.adam(learning_rate=1e-2)
-#     # init: where to initialise the optimisation
-#
-#     # we take the negative of the acquisition function since optax algs designed to minimise rather than maximise
-#     def objective(x):
-#         return - acq_func(x, model) # this can probably be avoided by using partial derivatives instead. Do I need to "build" everytime?
-#
-#     def optimization(x: optax.Params, optimizer: optax.GradientTransformation) -> optax.Params:
-#         opt_state = optimizer.init(x)
-#
-#         @jax.jit
-#         def step(x, opt_state):
-#             loss_value, grads = jax.value_and_grad(objective)(x)
-#             updates, opt_state = optimizer.update(grads, opt_state, x)
-#             x = optax.apply_updates(x, updates)
-#             return x, opt_state, loss_value
-#
-#         for i in range(iters):
-#             x, opt_state, loss_value = step(x, opt_state)
-#             # if i % 100 == 0:
-#             #     print(f'step {i}, loss: {loss_value}')
-#
-#         return x
-#
-#     x_opt = optimization(init, optimizer)
-#
-#     return x_opt
 
 
 def random_acq(acq_func, model, num_samples=1000): #, std_weight=1., margin=None):  # TODO allow for multiple points to be kept
