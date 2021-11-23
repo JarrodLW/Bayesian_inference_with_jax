@@ -83,9 +83,9 @@ elif example_num == 3:
     def quadratic(x, a, b, c):
         return jnp.ravel(a * x ** 2 + b * x + c)
 
-    # model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
-    #                            prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
-    model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
+    model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
+                               prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+    #model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
 
     # defining acquisition function and algorithm etc
     optimizer = optax.adam(learning_rate=1e-2)
