@@ -26,10 +26,6 @@ class base_func:
         return base_func(lambda x, model: lam*self.function(x, model))
 
 
-# def current_max(model, observed=True):
-#     # returns either the highest observed value so far, or the
-
-
 def PI_acquisition(Xsamples, model, margin):
     # isn't there a closed-form solution for the optimal sampling point?
     # calculate the best surrogate score found so far

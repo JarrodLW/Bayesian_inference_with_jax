@@ -80,6 +80,11 @@ elif example_num == 3:
     def objective(x):
         return jnp.ravel(x ** 2 * jnp.sin(5 * jnp.pi * x) ** 6.0)
 
+    def quadratic(x, a, b, c):
+        return jnp.ravel(a * x ** 2 + b * x + c)
+
+    # model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
+    #                            prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
     model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
 
     # defining acquisition function and algorithm etc
@@ -88,19 +93,17 @@ elif example_num == 3:
     acq_func = acq_func_builder('PI', margin=0.01)
 
     # initialising model
-    num_iters = 5
+    num_iters = 3
     # initialising
-    X0 = jnp.asarray([0.2]).reshape((1, model.domain_dim))
+    X0 = jnp.asarray([0.2, 0.5, 0.8]).reshape((3, model.domain_dim))
     y0 = objective(X0)
     model.fit(X0, y0, compute_cov=True)
 
-    # print(acq_func(jnp.array([0.5]).reshape((1, 1)), model))
-    # x = acq_alg(acq_func, model)
-
     # optimisation
     X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective, return_surrogates=False,
-                                       acq_alg=acq_alg, dynamic_plot=False)
+                                       acq_alg=acq_alg, dynamic_plot=True)
 
     x_vals = jnp.arange(0, 1, 1 / 50)
     y_vals = jax.vmap(objective)(x_vals)
+    plt.figure()
     plt.plot(np.asarray(x_vals), np.asarray(y_vals))

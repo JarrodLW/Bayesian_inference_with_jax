@@ -81,13 +81,10 @@ class GaussianProcessReg():
 
         pred_mu = jnp.matmul(test_train_covs.T, alpha)
         pred_mu += self.prior_mean(Xsamples, **self.prior_mean_kwargs)
-        #pred_mu = np.ndarray.flatten(pred_mu) # what to do here?
 
         #t1 = time()
         k = self.kernel(Xsamples, Xsamples)
         #t2 = time()
-
-        #print("time computing kernel: " + str(t2 - t1))
 
         v = solve_triangular(self.L, test_train_covs, lower=True)
         pred_covs = k - jnp.matmul(v.T, v)
@@ -96,7 +93,7 @@ class GaussianProcessReg():
         # TODO: throw up error if inversion wasn't successful
         print("failure to invert " +
               str(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, alpha)) - y_shifted)))/
-                  jnp.sqrt(jnp.sum(jnp.square(y_shifted)))))
+                  (jnp.sqrt(jnp.sum(jnp.square(y_shifted)))+1e-7)))
 
         #t_end = time()
         #print("total predict time: "+str(t_end-t0))

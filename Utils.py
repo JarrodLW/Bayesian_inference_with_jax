@@ -27,3 +27,5 @@ def plot(X, y, model, objective):
     plt.fill_between(Xsamples, ysamples - sample_stds, ysamples + sample_stds, alpha=0.4)
     # show the plot
     plt.show()
+
+
