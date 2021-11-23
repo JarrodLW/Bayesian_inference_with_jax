@@ -4,20 +4,18 @@
 import jax.numpy as jnp
 import numpy as np
 from jax.scipy.stats import norm
-#from scipy.spatial import distance
 from scipy.special import gamma, kv
 
 
 # acquisition functions
 
 class base_func:
-
     # class structure for algebra of acquisition functions
 
     def __init__(self, function):
         self.function = function
 
-    def __call__(self, x: np.array, model):
+    def __call__(self, x: jnp.array, model):
         print("base func call :" + str(type(model)))
         return self.function(x, model)
 
@@ -44,7 +42,7 @@ def PI_acquisition(Xsamples, model, margin):
     mu, covs = model.predict(Xsamples)
     std = jnp.sqrt(jnp.diag(covs))
 
-    if Xsamples.shape[0] == 1:
+    if Xsamples.shape[0] == 1: # must be a better way than this!
         mu = mu[0]
         std = std[0]
 
@@ -61,7 +59,7 @@ def EI_acquisition(Xsamples, model, margin):
     mu, covs = model.predict(Xsamples)
     std = np.sqrt(np.diag(covs))
 
-    if Xsamples.shape[0] == 1:
+    if Xsamples.shape[0] == 1: # must be a better way than this!
         mu = mu[0]
         std = std[0]
 
@@ -76,7 +74,7 @@ def UCB_acquisition(Xsamples, model, std_weight):
     mu, covs = model.predict(Xsamples)
     std = np.sqrt(np.diag(covs))
 
-    if Xsamples.shape[0] == 1:
+    if Xsamples.shape[0] == 1: # must be a better way than this!
         mu = mu[0]
         std = std[0]
 

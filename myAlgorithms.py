@@ -23,13 +23,18 @@ class optax_acq_alg_builder:
         # TODO: assert error if init inconsistent with model dimension
         # TODO: incorporate other initialisation strategies
 
-        # random initialisation if no init given
+        # random initialisation if no init given. Use jax random instead?
         if init is None:
             init = jnp.array(np.random.random(model.domain_dim)).reshape((1, model.domain_dim))
+            #init = jnp.array([0.5]*model.domain_dim).reshape((1, 1))
+
+        # print("init: "+str(init))
+        # print(init)
 
         # we take the negative of the acquisition function since optax algs designed to minimise rather than maximise
         def acq_objective(x):
-            return - acq_func(jnp.array([x]).reshape((1, model.domain_dim)), model)  # this can probably be avoided by using partial derivatives instead. Do I need to "build" everytime?
+            return - acq_func(jnp.array([x]).reshape((1, model.domain_dim)), model)
+            # this can probably be avoided by using partial derivatives instead. Do I need to "build" everytime?
 
         def optimization(x: optax.Params) -> optax.Params:
             opt_state = self.optimizer.init(x)
@@ -45,10 +50,10 @@ class optax_acq_alg_builder:
                 x, opt_state, loss_value = step(x, opt_state)
                 # if i % 100 == 0:
                 #     print(f'step {i}, loss: {loss_value}')
-            return x
+            return x, loss_value
 
-        x_opt = optimization(init)
-        return x_opt
+        x_opt, final_loss = optimization(init)
+        return x_opt, final_loss
 
 
 def random_acq(acq_func, model, num_samples=1000): #, std_weight=1., margin=None):  # TODO allow for multiple points to be kept
@@ -63,13 +68,13 @@ def random_acq(acq_func, model, num_samples=1000): #, std_weight=1., margin=None
     return Xsamples[ix].reshape(1, domain_dim)
 
 
-def opt_routine(acq_func, model, num_iters, X0, y0, objective, opt_alg=random_acq,
+def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_acq,
                 return_surrogates=False, dynamic_plot=False):
     #TODO: refactor. This is a mess. Also, plotting functionality will only work in 1d
 
     x_vals = X0
     y_vals = y0
-    ix = np.argmax(y0)
+    ix = jnp.argmax(y0)
 
     if return_surrogates:
         surrogate_means = np.zeros((num_iters, 1000))
@@ -77,7 +82,12 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, opt_alg=random_ac
 
     for i in range(num_iters):
         # select the next point to sample
-        x = opt_alg(acq_func, model)
+        print(acq_func(jnp.array([0.5]).reshape((1, 1)), model))
+        #print(model)
+        # random restarts:
+        #final_loss = 0.
+        #for j in range(20): # remove hard-coded restart num
+        x, final_loss = acq_alg(acq_func, model)
 
         # sample the point
         actual = objective(x)
@@ -87,8 +97,8 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, opt_alg=random_ac
         # update the model
         model.fit(x, actual)
 
-        x_vals = np.append(x_vals, x, axis=0)
-        y_vals = np.append(y_vals, actual)
+        x_vals = jnp.append(x_vals, x, axis=0)
+        y_vals = jnp.append(y_vals, actual)
 
         if return_surrogates:
             test_points = np.asarray(np.arange(0, 1, 1 / 1000)).reshape((1000, x_vals.shape[1]))
@@ -105,17 +115,15 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, opt_alg=random_ac
             plt.pause(1e-17)
             time.sleep(2.)
 
+        print("iter "+str(i)+" successful")
+
     if return_surrogates:
         surrogate_data = {'means': surrogate_means, 'stds': surrogate_stds}
-
     else:
         surrogate_data = None
 
     print('First best guess: x=%.3f, y=%.3f' % (X0[ix], y0[ix]))
-
     ix = np.argmax(model.y)
     print('Best Result: x=%.3f, y=%.3f' % (model.X[ix], model.y[ix]))
 
     return x_vals, y_vals, surrogate_data
-
-

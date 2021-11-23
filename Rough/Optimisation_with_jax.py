@@ -19,9 +19,7 @@ if example_num == 1:
         return - x ** 2 * jnp.sin(5 * jnp.pi * x) ** 6.0
 
     initial_params = 0.65
-
     optimizer = optax.adam(learning_rate=1e-2)
-
 
     def fit(x: optax.Params, optimizer: optax.GradientTransformation) -> optax.Params:
         opt_state = optimizer.init(x)
@@ -48,7 +46,6 @@ if example_num == 1:
     y_vals = jax.vmap(objective)(x_vals)
     plt.plot(np.asarray(x_vals), np.asarray(y_vals))
 
-
 elif example_num == 2:
 
     model = GaussianProcessReg(sigma=2., lengthscale=0.2, obs_noise_stdev=0.1)
@@ -58,24 +55,30 @@ elif example_num == 2:
     y0 = jnp.array([3.7, 3.4, 3.1, 4.2, 3.6])
     model.fit(X0, y0, compute_cov=True)
 
-    def objective(x):
-        return -PI_acquisition(jnp.array([x]).reshape((1, 1)), model, 0.)
-
     initial_params = 0.48
     optimizer = optax.adam(learning_rate=1e-2)
     acq_alg = optax_acq_alg_builder(optimizer)
     acq_func = acq_func_builder('PI', margin=0.01)
-    x_opt = acq_alg(acq_func, model, initial_params)
+    #x_opt = acq_alg(acq_func, model, initial_params)
+    x_opt = acq_alg(acq_func, model)
+
+    # def acq_objective(x):
+    #     return - acq_func(jnp.array([x]).reshape((1, model.domain_dim)), model)
+
+    def acq_objective(x):
+        return - PI_acquisition(jnp.array([x]).reshape((1, 1)), model, 0.)
 
     print("x opt: " + str(x_opt))
     x_vals = jnp.arange(0, 1, 1 / 50)
-    y_vals = jax.vmap(objective)(x_vals)
+    y_vals = jax.vmap(acq_objective)(x_vals)
     plt.plot(np.asarray(x_vals), np.asarray(y_vals))
 
 ## running BayesOpt workflow - example adapted from "Single example" file
 elif example_num == 3:
+
+    # is ravel the correct thing to be using?
     def objective(x):
-        return - x ** 2 * jnp.sin(5 * jnp.pi * x) ** 6.0
+        return jnp.ravel(x ** 2 * jnp.sin(5 * jnp.pi * x) ** 6.0)
 
     model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
 
@@ -83,17 +86,21 @@ elif example_num == 3:
     optimizer = optax.adam(learning_rate=1e-2)
     acq_alg = optax_acq_alg_builder(optimizer)
     acq_func = acq_func_builder('PI', margin=0.01)
-    #x_opt = acq_alg(acq_func, model, initial_params)
 
-    # setting up optimisation
-    # setting hyper-parameters
+    # initialising model
     num_iters = 5
     # initialising
-    X0 = np.asarray(0.2).reshape((1, model.domain_dim))
+    X0 = jnp.asarray([0.2]).reshape((1, model.domain_dim))
     y0 = objective(X0)
     model.fit(X0, y0, compute_cov=True)
 
-    # optimisation
-    X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective, return_surrogates=True,
-                                       opt_alg=acq_alg, dynamic_plot=True)
+    # print(acq_func(jnp.array([0.5]).reshape((1, 1)), model))
+    # x = acq_alg(acq_func, model)
 
+    # optimisation
+    X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective, return_surrogates=False,
+                                       acq_alg=acq_alg, dynamic_plot=False)
+
+    x_vals = jnp.arange(0, 1, 1 / 50)
+    y_vals = jax.vmap(objective)(x_vals)
+    plt.plot(np.asarray(x_vals), np.asarray(y_vals))
