@@ -85,7 +85,8 @@ elif example_num == 3:
 
     model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
                                prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
-    #model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
+    # model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
+    #model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2)
 
     # defining acquisition function and algorithm etc
     optimizer = optax.adam(learning_rate=1e-2)
@@ -95,7 +96,7 @@ elif example_num == 3:
     # initialising model
     num_iters = 3
     # initialising
-    X0 = jnp.asarray([0.2, 0.5, 0.8]).reshape((3, model.domain_dim))
+    X0 = jnp.asarray([0.2, 0.3, 0.8]).reshape((3, model.domain_dim))
     y0 = objective(X0)
     model.fit(X0, y0, compute_cov=True)
 

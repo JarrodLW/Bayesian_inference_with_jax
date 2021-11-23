@@ -54,8 +54,7 @@ class GaussianProcessReg():
 
             # broadcast covariances
             k = self.kernel(Xsamples, Xsamples)
-            self.covs = jnp.block([[self.covs, test_train_covs],
-                                  [test_train_covs.T, k]])
+            self.covs = jnp.block([[self.covs, test_train_covs], [test_train_covs.T, k]])
 
             # update x and y vectors
             self.X = jnp.concatenate((self.X, Xsamples), axis=0)
@@ -71,20 +70,13 @@ class GaussianProcessReg():
 
     def predict(self, Xsamples):
         # should I be saving the mu and std to memory?
-
-        #t0 = time()
-
         test_train_covs = self.kernel(self.X, Xsamples)
 
         y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
         alpha = solve_triangular(self.L.T, solve_triangular(self.L, y_shifted, lower=True), lower=False)  # following nomenclature in Rasmussen
-
         pred_mu = jnp.matmul(test_train_covs.T, alpha)
         pred_mu += self.prior_mean(Xsamples, **self.prior_mean_kwargs)
-
-        #t1 = time()
         k = self.kernel(Xsamples, Xsamples)
-        #t2 = time()
 
         v = solve_triangular(self.L, test_train_covs, lower=True)
         pred_covs = k - jnp.matmul(v.T, v)
@@ -94,9 +86,6 @@ class GaussianProcessReg():
         print("failure to invert " +
               str(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, alpha)) - y_shifted)))/
                   (jnp.sqrt(jnp.sum(jnp.square(y_shifted)))+1e-7)))
-
-        #t_end = time()
-        #print("total predict time: "+str(t_end-t0))
 
         return pred_mu, pred_covs
 

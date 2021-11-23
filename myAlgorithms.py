@@ -85,7 +85,7 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_ac
     for i in range(num_iters):
         # select the next point to sample
         # random restarts. Should this be moved into optimizer?
-        num_restarts = 10  # remove hard-coded restart num
+        num_restarts = 5  # remove hard-coded restart num
 
         x_cands = jnp.zeros((num_restarts, model.domain_dim), dtype=jnp.float32)
         x_cand_losses = jnp.zeros(num_restarts, dtype=jnp.float32)
@@ -95,9 +95,8 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_ac
             x_cand_losses = x_cand_losses.at[j].set(final_loss)
 
         ind_best = jnp.argmin(x_cand_losses)
-        print("index of best: "+str(ind_best))
         x = x_cands[jnp.argmin(x_cand_losses), :].reshape((1, model.domain_dim))
-        final_loss = jnp.amin(x_cand_losses)
+        final_loss = x_cand_losses[ind_best]
 
         if return_surrogates or dynamic_plot:
             mu, covs = model.predict(test_points)  # TODO: needn't compute these if not returning surrogate or plotting
@@ -119,7 +118,7 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_ac
             ax2.plot(jnp.ravel(test_points), acq_func_val)
             ax2.scatter(x, -final_loss) # we take the minus since the loss is the negative of the acquisition
             #plt.plot(jnp.ravel(test_points), acq_func_val)
-            #plt.pause(1e-17)
+            plt.pause(1e-17)
             #time.sleep(2.)
 
         # sample the point
@@ -133,13 +132,12 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_ac
         x_vals = jnp.append(x_vals, x, axis=0)
         y_vals = jnp.append(y_vals, actual)
 
-        print("iter "+str(i)+" successful")
+        print("iter "+str(i+1)+" successful")
 
     if return_surrogates:
         surrogate_data = {'means': surrogate_means, 'stds': surrogate_stds}
     else:
         surrogate_data = None
-
 
     print('First best guess: x=%.3f, y=%.3f' % (X0[ix], y0[ix]))
     ix = np.argmax(model.y)
