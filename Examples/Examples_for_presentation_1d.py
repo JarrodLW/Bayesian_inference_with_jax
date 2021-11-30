@@ -2,8 +2,8 @@
 # Runs regression and optimisation examples for choice of prior mean function, acquisition function and kernel
 
 from Regressors import *
-from myFunctions import *
-from myAlgorithms import *
+from AcquisitionFuncs import *
+from Algorithms import *
 import matplotlib.pyplot as plt
 import time
 from numpy.random import normal

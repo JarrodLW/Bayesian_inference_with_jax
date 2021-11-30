@@ -3,8 +3,8 @@
 
 from Regressors import *
 from Utils import plot
-from myFunctions import *
-from myAlgorithms import opt_acquisition
+from AcquisitionFuncs import *
+from Algorithms import opt_acquisition
 import matplotlib.pyplot as plt
 import time
 from numpy.random import normal

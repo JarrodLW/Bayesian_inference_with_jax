@@ -1,9 +1,9 @@
 import numpy as np
 import jax.numpy as jnp
 from jax import grad, jit, vmap
-from myFunctions import PI_acquisition, RBF, Periodic, acq_func_builder, rescaled_sq_pair_dists
+from AcquisitionFuncs import PI_acquisition, RBF, Periodic, acq_func_builder, rescaled_sq_pair_dists
 from Regressors import GaussianProcessReg
-from myAlgorithms import opt_acquisition
+#from myAlgorithms import opt_acquisition
 from scipy.spatial.distance import cdist
 from time import time
 from jax.scipy.stats import norm
@@ -130,7 +130,7 @@ Periodic_kernel = Periodic(sigma, lengthscale, jnp.pi/3)
 x1 = jnp.arange(30).reshape((5, 6))/30
 x2 = jnp.arange(18).reshape((3, 6))/18
 RBF_kernel(x1, x2)
-
+RBF_kernel(x1, x1)
 
 def distance_component(X1, X2):
     dist = rescaled_sq_pair_dists(X1, X2, lengthscale, dist='euclidean')[0, 1]

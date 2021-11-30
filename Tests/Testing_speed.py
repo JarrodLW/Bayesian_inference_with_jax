@@ -1,6 +1,6 @@
 from Regressors import *
-from myFunctions import *
-from myAlgorithms import *
+from AcquisitionFuncs import *
+from Algorithms import *
 from numpy.random import normal
 
 

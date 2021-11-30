@@ -4,7 +4,7 @@
 import numpy as np
 from numpy.random import multivariate_normal as normal
 #from scipy.stats import multivariate_normal as normal
-from myFunctions import RBF, Periodic, Matern
+from AcquisitionFuncs import RBF, Periodic, Matern
 import matplotlib.pyplot as plt
 
 kernel_type='RBF'

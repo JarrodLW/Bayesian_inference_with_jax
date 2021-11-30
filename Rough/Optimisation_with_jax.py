@@ -6,8 +6,8 @@ import numpy as np
 import optax
 import matplotlib.pyplot as plt
 from Regressors import *
-from myFunctions import *
-from myAlgorithms import *
+from AcquisitionFuncs import *
+from Algorithms import *
 
 ## trying to find maximum of function
 

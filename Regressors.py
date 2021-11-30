@@ -3,7 +3,7 @@
 #import numpy as np
 import jax.numpy as jnp
 from jax.scipy.linalg import cholesky, solve_triangular
-from myFunctions import RBF, Periodic, Matern
+from Kernels import RBF, Periodic, Matern
 from time import time
 
 
@@ -88,4 +88,3 @@ class GaussianProcessReg():
                   (jnp.sqrt(jnp.sum(jnp.square(y_shifted)))+1e-7)))
 
         return pred_mu, pred_covs
-
