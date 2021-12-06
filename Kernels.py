@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import numpy as np
 from scipy.special import gamma, kv
 
-class kernels():
+class Kernels():
 
     def __init__(self, cov_func):
         self.cov_func = cov_func
@@ -14,13 +14,13 @@ class kernels():
         return self.cov_func(x1, x2)
 
     def __add__(self, g):
-        return kernels(lambda x1, x2: self.cov_func(x1, x2) + g(x1, x2))
+        return Kernels(lambda x1, x2: self.cov_func(x1, x2) + g(x1, x2))
 
     def __rmul__(self, lam):
-        return kernels(lambda x1, x2: lam*self.cov_func(x1, x2))
+        return Kernels(lambda x1, x2: lam * self.cov_func(x1, x2))
 
     def __mul__(self, g):
-        return kernels(lambda x1, x2: self.cov_func(x1, x2)*g(x1, x2))
+        return Kernels(lambda x1, x2: self.cov_func(x1, x2) * g(x1, x2))
 
 
 def rescaled_sq_pair_dists(x1, x2, lengthscale=1, dist='euclidean'):
@@ -47,7 +47,7 @@ def rescaled_sq_pair_dists(x1, x2, lengthscale=1, dist='euclidean'):
     return squared_dm
 
 
-class RBF(kernels):
+class RBF(Kernels):
 
     # \sigma^2\exp(-\Vert x - x'\Vert^2/2l**2)
 
@@ -59,7 +59,7 @@ class RBF(kernels):
         super().__init__(cov_func)
 
 
-class Periodic(kernels):
+class Periodic(Kernels):
 
     # \sigma^2\exp(-2\sin^2(\pi\Vert x - x'\Vert/p)/l^2)
 
@@ -74,7 +74,7 @@ class Periodic(kernels):
         super().__init__(cov_func)
 
 
-class Matern(kernels):
+class Matern(Kernels):
 
     # \sigma^2*(2**(1-nu)/Gamma(nu))*(sqrt(2*nu)*\Vert x - x'\Vert/l)**nu*K_nu(sqrt(2*nu)*\Vert x - x'\Vert/l)
     # nu is the "order"

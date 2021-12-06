@@ -57,7 +57,7 @@ elif example_num == 2:
 
     initial_params = 0.48
     optimizer = optax.adam(learning_rate=1e-2)
-    acq_alg = optax_acq_alg_builder(optimizer)
+    acq_alg = OptaxAcqAlgBuilder(optimizer)
     acq_func = acq_func_builder('PI', margin=0.01)
     #x_opt = acq_alg(acq_func, model, initial_params)
     x_opt = acq_alg(acq_func, model)
@@ -90,7 +90,7 @@ elif example_num == 3:
 
     # defining acquisition function and algorithm etc
     optimizer = optax.adam(learning_rate=1e-2)
-    acq_alg = optax_acq_alg_builder(optimizer)
+    acq_alg = OptaxAcqAlgBuilder(optimizer)
     acq_func = acq_func_builder('PI', margin=0.01)
 
     # initialising model
@@ -102,7 +102,7 @@ elif example_num == 3:
 
     # optimisation
     X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective, return_surrogates=False,
-                                       acq_alg=acq_alg, dynamic_plot=True)
+                                       acq_alg=acq_alg, dynamic_plot=True) #TODO: X0, y0 incorporated into model?
 
     x_vals = jnp.arange(0, 1, 1 / 50)
     y_vals = jax.vmap(objective)(x_vals)

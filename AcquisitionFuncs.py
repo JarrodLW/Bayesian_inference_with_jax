@@ -8,7 +8,7 @@ from jax.scipy.stats import norm
 
 # acquisition functions
 
-class base_func:
+class BaseFunc:
     # class structure for algebra of acquisition functions
 
     def __init__(self, function):
@@ -19,10 +19,10 @@ class base_func:
         return self.function(x, model)
 
     def __add__(self, g):
-        return base_func(lambda x, model: self.function(x, model) + g(x, model))
+        return BaseFunc(lambda x, model: self.function(x, model) + g(x, model))
 
     def __rmul__(self, lam):
-        return base_func(lambda x, model: lam*self.function(x, model))
+        return BaseFunc(lambda x, model: lam * self.function(x, model))
 
 
 def PI_acquisition(Xsamples, model, margin):
@@ -82,14 +82,14 @@ def acq_func_builder(method, *args, **kwargs):
 
     if method=='PI':
         f = lambda x, model: PI_acquisition(x, model, *args, **kwargs)
-        return base_func(f)
+        return BaseFunc(f)
 
     elif method == 'EI':
         f = lambda x, model: EI_acquisition(x, model, *args, **kwargs)
-        return base_func(f)
+        return BaseFunc(f)
 
     elif method=='UCB':
         f = lambda x, model: UCB_acquisition(x, model, *args, **kwargs)
-        return base_func(f)
+        return BaseFunc(f)
 
 

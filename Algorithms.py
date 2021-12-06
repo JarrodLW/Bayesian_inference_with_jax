@@ -8,7 +8,7 @@ import optax
 import jax
 
 
-class optax_acq_alg_builder:
+class OptaxAcqAlgBuilder:
     # More generally, could pass a more complicated optimisation schedule?
     def __init__(self, optimizer, iters=1000):
         self.optimizer = optimizer
@@ -55,7 +55,8 @@ class optax_acq_alg_builder:
         return x_opt, final_loss
 
 
-def random_acq(acq_func, model, num_samples=1000): #, std_weight=1., margin=None):  # TODO allow for multiple points to be kept
+def random_acq(acq_func, model, num_samples=1000): #, std_weight=1., margin=None):
+    # TODO allow for batching
     # TODO allow for differing domain geometries
     domain_dim = model.domain_dim
     # random search, generate random samples
