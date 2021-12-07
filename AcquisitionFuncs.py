@@ -67,7 +67,7 @@ def EI_acquisition(Xsamples, model, margin):
 def UCB_acquisition(Xsamples, model, std_weight):
 
     mu, covs = model.predict(Xsamples)
-    std = np.sqrt(np.diag(covs))
+    std = jnp.sqrt(jnp.diag(covs))
 
     if Xsamples.shape[0] == 1: # must be a better way than this!
         mu = mu[0]

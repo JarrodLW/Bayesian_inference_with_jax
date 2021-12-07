@@ -91,7 +91,8 @@ elif example_num == 3:
     # defining acquisition function and algorithm etc
     optimizer = optax.adam(learning_rate=1e-2)
     acq_alg = OptaxAcqAlgBuilder(optimizer)
-    acq_func = acq_func_builder('PI', margin=0.01)
+    #acq_func = acq_func_builder('PI', margin=0.01)
+    acq_func = acq_func_builder('UCB', std_weight=1.)
 
     # initialising model
     num_iters = 3
