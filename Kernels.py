@@ -5,6 +5,7 @@ import jax.numpy as jnp
 import numpy as np
 from scipy.special import gamma, kv
 
+
 class Kernels():
 
     def __init__(self, cov_func):
@@ -23,10 +24,9 @@ class Kernels():
         return Kernels(lambda x1, x2: self.cov_func(x1, x2) * g(x1, x2))
 
 
-def rescaled_sq_pair_dists(x1, x2, lengthscale=1, dist='euclidean'):
+def rescaled_sq_pair_dists(x1, x2, lengthscale=1., dist='euclidean'):
     # lengthscale: either a scalar or list of same dimension as domain
     # TODO: add error when lengthscale has length not equal to base dimension?
-    # Note: there some to be larger errors than I'd expect
     # TODO: assert error when x1 and x2 has mismatched .shape[1]
 
     # height = x1.shape[0]
@@ -63,12 +63,12 @@ class Periodic(Kernels):
 
     # \sigma^2\exp(-2\sin^2(\pi\Vert x - x'\Vert/p)/l^2)
 
-    def __init__(self, stdev, lengthscale, period, dist='euclidean'): # only supports isottopic lengthscale
+    def __init__(self, stdev, lengthscale, period, dist='euclidean'): # only supports isotropic lengthscale
         # TODO: assert error if you try to pass lengthscale list?
 
         def cov_func(x1, x2):
-            covs = stdev ** 2 * jnp.exp(-2*jnp.sin(np.pi*jnp.sqrt(rescaled_sq_pair_dists(x1, x2, dist))/
-                                                   period)/lengthscale**2)
+            covs = stdev ** 2 * jnp.exp(-2*jnp.sin(np.pi*jnp.sqrt(rescaled_sq_pair_dists(x1, x2, dist=dist))/
+                                                   period)**2/lengthscale**2)
             return covs
 
         super().__init__(cov_func)

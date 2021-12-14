@@ -4,19 +4,19 @@
 from Regressors import *
 from Utils import plot
 from AcquisitionFuncs import *
-from Algorithms import opt_acquisition
+#from Algorithms import opt_acquisition
 import matplotlib.pyplot as plt
 import time
 from numpy.random import normal
 
 
-gaussian_reg_example = False
-optimisation = True
+gaussian_reg_example = True
+optimisation = False
 num_initial_samples = 1
 acq_type = 'PI'  # only needed for optimisation example
 #prior_mean_func = 'quadratic'
 prior_mean_func = None
-kernel_type = 'Matern'
+kernel_type = 'Periodic'
 
 if prior_mean_func is None:
 

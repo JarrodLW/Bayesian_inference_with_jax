@@ -65,7 +65,7 @@ def random_acq(acq_func, model, num_samples=1000): #, std_weight=1., margin=None
     # locate the index of the largest scores
     ix = jnp.argmax(scores)
     print("Best score " + str(np.amax(scores)))
-    return Xsamples[ix].reshape(1, domain_dim)
+    return Xsamples[ix].reshape(1, domain_dim), - scores[ix] # any point returning scores?
 
 
 def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_acq,
@@ -101,7 +101,7 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_ac
 
         if return_surrogates or dynamic_plot:
             mu, covs = model.predict(test_points)  # TODO: needn't compute these if not returning surrogate or plotting
-            stds = np.sqrt(np.diagonal(covs))
+            stds = jnp.sqrt(jnp.diagonal(covs))
             surrogate_means[i, :] = mu
             surrogate_stds[i, :] = stds
             acq_func_val = acq_func(test_points, model)

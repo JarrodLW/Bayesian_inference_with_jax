@@ -49,10 +49,10 @@ def PI_acquisition(Xsamples, model, margin):
 
 def EI_acquisition(Xsamples, model, margin):
 
-    best = np.amax(model.y)
+    best = jnp.amax(model.y)
     best_plus_margin = best + margin
     mu, covs = model.predict(Xsamples)
-    std = np.sqrt(np.diag(covs))
+    std = jnp.sqrt(jnp.diag(covs))
 
     if Xsamples.shape[0] == 1: # must be a better way than this!
         mu = mu[0]

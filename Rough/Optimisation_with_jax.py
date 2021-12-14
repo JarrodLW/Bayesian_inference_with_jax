@@ -83,16 +83,18 @@ elif example_num == 3:
     def quadratic(x, a, b, c):
         return jnp.ravel(a * x ** 2 + b * x + c)
 
-    model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
-                               prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
-    # model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
+    # model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
+    #                            prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+    #model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
     #model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2)
+    model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.1, obs_noise_stdev=0.01, period=2,
+                               prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
     # defining acquisition function and algorithm etc
     optimizer = optax.adam(learning_rate=1e-2)
     acq_alg = OptaxAcqAlgBuilder(optimizer)
-    #acq_func = acq_func_builder('PI', margin=0.01)
-    acq_func = acq_func_builder('UCB', std_weight=1.)
+    acq_func = acq_func_builder('EI', margin=0.01)
+    #acq_func = acq_func_builder('UCB', std_weight=1.)
 
     # initialising model
     num_iters = 3
@@ -101,9 +103,12 @@ elif example_num == 3:
     y0 = objective(X0)
     model.fit(X0, y0, compute_cov=True)
 
-    # optimisation
+    #optimisation
     X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective, return_surrogates=False,
                                        acq_alg=acq_alg, dynamic_plot=True) #TODO: X0, y0 incorporated into model?
+
+    # X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective, return_surrogates=False,
+    #                                    dynamic_plot=True)  # TODO: X0, y0 incorporated into model?
 
     x_vals = jnp.arange(0, 1, 1 / 50)
     y_vals = jax.vmap(objective)(x_vals)
