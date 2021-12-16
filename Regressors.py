@@ -21,6 +21,8 @@ class GaussianProcessReg():
         self.obs_noise_stdev = obs_noise_stdev
         self.L = None
         self.domain_dim = domain_dim
+        self.alpha = None
+        self.log_marg_likelihood = None
 
         if prior_mean is None:
             prior_mean = lambda x: 0
@@ -42,6 +44,7 @@ class GaussianProcessReg():
             self.kernel = Matern(sigma, lengthscale, order)
 
     def fit(self, Xsamples, ysamples, compute_cov=False):
+        print("Fitting GP to data")
 
         if compute_cov:
             self.covs = self.kernel(Xsamples, Xsamples)
@@ -64,17 +67,27 @@ class GaussianProcessReg():
         covs_plus_noise = self.covs + self.obs_noise_stdev**2*jnp.identity(self.covs.shape[0])
         self.L = cholesky(covs_plus_noise, lower=True)
 
-        # TODO throw up error if it failed to to factorise to sufficient accuracy
-        print("failure to factorise " + str(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, self.L.T) - covs_plus_noise)))
-              /jnp.sqrt(jnp.sum(jnp.square(covs_plus_noise)))))
+        assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, self.L.T) - covs_plus_noise)))
+              /jnp.sqrt(jnp.sum(jnp.square(covs_plus_noise)))) < 1e-6, "factorisation error too large"
+
+        # computing log marginal likelihood
+        y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
+        self.alpha = solve_triangular(self.L.T, solve_triangular(self.L, y_shifted, lower=True),
+                                 lower=False)  # following nomenclature in Rasmussen
+        self.log_marg_likelihood = - (1/2)*jnp.dot(self.y, self.alpha) - jnp.sum(jnp.diag(self.L)) \
+                                   - (Xsamples.shape[0]/2)*jnp.log(2*jnp.pi)
+
+        print("num of samples:" + str(Xsamples.shape[0]))
+
 
     def predict(self, Xsamples):
+
         # should I be saving the mu and std to memory?
         test_train_covs = self.kernel(self.X, Xsamples)
 
-        y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
-        alpha = solve_triangular(self.L.T, solve_triangular(self.L, y_shifted, lower=True), lower=False)  # following nomenclature in Rasmussen
-        pred_mu = jnp.matmul(test_train_covs.T, alpha)
+        # y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
+        # alpha = solve_triangular(self.L.T, solve_triangular(self.L, y_shifted, lower=True), lower=False)  # following nomenclature in Rasmussen
+        pred_mu = jnp.matmul(test_train_covs.T, self.alpha)
         pred_mu += self.prior_mean(Xsamples, **self.prior_mean_kwargs)
         k = self.kernel(Xsamples, Xsamples)
 
@@ -82,9 +95,7 @@ class GaussianProcessReg():
         pred_covs = k - jnp.matmul(v.T, v)
         #pred_std = np.sqrt(np.abs(np.diag(pred_covs)))
 
-        # TODO: throw up error if inversion wasn't successful
-        print("failure to invert " +
-              str(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, alpha)) - y_shifted)))/
-                  (jnp.sqrt(jnp.sum(jnp.square(y_shifted)))+1e-7)))
+        # assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, alpha)) - y_shifted)))/
+        #           (jnp.sqrt(jnp.sum(jnp.square(y_shifted)))+1e-7)) < 1e-6
 
         return pred_mu, pred_covs

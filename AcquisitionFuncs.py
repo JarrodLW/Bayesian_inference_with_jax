@@ -15,7 +15,6 @@ class BaseFunc:
         self.function = function
 
     def __call__(self, x: jnp.array, model):
-        print("base func call :" + str(type(model)))
         return self.function(x, model)
 
     def __add__(self, g):

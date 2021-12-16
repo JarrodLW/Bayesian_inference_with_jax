@@ -1,7 +1,8 @@
 import numpy as np
 import jax.numpy as jnp
 from jax import grad, jit, vmap
-from AcquisitionFuncs import PI_acquisition, RBF, Periodic, acq_func_builder, rescaled_sq_pair_dists
+from AcquisitionFuncs import PI_acquisition, acq_func_builder
+from Kernels import RBF, Periodic, rescaled_sq_pair_dists
 from Regressors import GaussianProcessReg
 #from myAlgorithms import opt_acquisition
 from scipy.spatial.distance import cdist
@@ -38,7 +39,8 @@ print(grad_func1(0.))
 
 grad_PI_acquisition = grad(PI_acquisition)
 
-model = GaussianProcessReg(sigma=0.2, lengthscale=0.2, obs_noise_stdev=0.1)
+#model = GaussianProcessReg(sigma=0.2, lengthscale=0.2, obs_noise_stdev=0.1)
+model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.1, obs_noise_stdev=0.01, period=2)
 # initialising model
 X0 = jnp.arange(5).reshape((5, 1))/5
 y0 = jnp.array([0.6, 2.4, 3.1, 4.2, 3.6])
@@ -61,7 +63,7 @@ num_samples = 1000
 acq_func = acq_func_builder(acq_type, **kwargs)
 x = opt_acquisition(acq_func, model, num_samples)
 
-print(PI_acquisition(jnp.asarray(1.0).reshape((1, 1)), model, 0.))
+print(PI_acquisition(jnp.asarray(0.6).reshape((1, 1)), model, 0.01))
 grad(PI_acquisition, argnums=0)(jnp.asarray([1.0]).reshape((1, 1)), model, 0.)
 
 
@@ -150,9 +152,10 @@ print(distance_component(x1, x1))
 
 grad(distance_component, argnums=0)(x1, x2)
 
-grad(RBF_kernel_component, argnums=0)(x1, x2)
+grad(RBF_kernel_component, argnums=0)(x1, x1)
+grad(RBF_kernel_component)(x1, x2)
 
-grad(Periodic_kernel_component, argnums=0)(x1, x2)
+grad(Periodic_kernel_component, argnums=0)(x1, 1.0001*x1)
 
 
 

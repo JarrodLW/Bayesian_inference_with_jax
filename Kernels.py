@@ -1,6 +1,7 @@
 # Created 06/10/2021
 # includes acquisition functions and kernels...
 
+import jax
 import jax.numpy as jnp
 import numpy as np
 from scipy.special import gamma, kv
@@ -60,16 +61,28 @@ class RBF(Kernels):
 
 
 class Periodic(Kernels):
-
+    # TODO: finish implementation of gradient
     # \sigma^2\exp(-2\sin^2(\pi\Vert x - x'\Vert/p)/l^2)
+    # jax isn't able to compute the gradient at zero, despite being well-defined, so we have to code this up by hand
 
     def __init__(self, stdev, lengthscale, period, dist='euclidean'): # only supports isotropic lengthscale
         # TODO: assert error if you try to pass lengthscale list?
 
+        #@jax.custom_jvp
         def cov_func(x1, x2):
             covs = stdev ** 2 * jnp.exp(-2*jnp.sin(np.pi*jnp.sqrt(rescaled_sq_pair_dists(x1, x2, dist=dist))/
                                                    period)**2/lengthscale**2)
             return covs
+
+        # @cov_func.defjvp
+        # def cov_func_jvp(primals, tangents):
+        #     x1, x2 = primals
+        #     x1_dot, x2_dot = tangents
+        #     primal_out = cov_func(x1, x2)
+        #     # grad_milestone = - (2*np.pi/(period*lengthscale**2))*jnp.matmul(jnp.sin(2*np.pi*(x1 - x2)/period), primal_out.T)
+        #     # print(grad_milestone.shape)
+        #     # tangent_out = grad_milestone*x1_dot + grad_milestone*x2_dot
+        #     return primal_out, tangent_out
 
         super().__init__(cov_func)
 

@@ -46,6 +46,7 @@ class OptaxAcqAlgBuilder:
                 x, opt_state, loss_value = step(x, opt_state)
                 # if i % 100 == 0:
                 #     print(f'step {i}, loss: {loss_value}')
+                # TODO: generalise these conditions -- these checks are for a unit cube [0, 1]^n.
                 if jnp.any(x < 0) or jnp.any(x > 1):
                     break
 
@@ -64,7 +65,7 @@ def random_acq(acq_func, model, num_samples=1000): #, std_weight=1., margin=None
     scores = acq_func(Xsamples, model)
     # locate the index of the largest scores
     ix = jnp.argmax(scores)
-    print("Best score " + str(np.amax(scores)))
+    #print("Best score " + str(np.amax(scores)))
     return Xsamples[ix].reshape(1, domain_dim), - scores[ix] # any point returning scores?
 
 
@@ -86,6 +87,7 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_ac
     for i in range(num_iters):
         # select the next point to sample
         # random restarts. Should this be moved into optimizer?
+
         num_restarts = 5  # remove hard-coded restart num
 
         x_cands = jnp.zeros((num_restarts, model.domain_dim), dtype=jnp.float32)
