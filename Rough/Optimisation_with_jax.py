@@ -83,8 +83,9 @@ elif example_num == 3:
     def quadratic(x, a, b, c):
         return jnp.ravel(a * x ** 2 + b * x + c)
 
-    kernel_hyperparam_kwargs = {'sigma': 0.1, 'lengthscale': 0.05}
-    model = GaussianProcessReg(kernel_hyperparam_kwargs=kernel_hyperparam_kwargs, obs_noise_stdev=0.01, prior_mean=quadratic,
+    #kernel_hyperparam_kwargs = {'sigma': 0.1, 'lengthscale': 0.05}
+    kernel_hyperparam_kwargs = {'sigma': 0.35, 'lengthscale': 0.11}
+    model = GaussianProcessReg(kernel_hyperparam_kwargs=kernel_hyperparam_kwargs, obs_noise_stdev=0.001, prior_mean=quadratic,
                                prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
     # model = GaussianProcessReg(kernel_hyperparam_kwargs=kernel_hyperparam_kwargs, obs_noise_stdev=0.01)
@@ -104,6 +105,7 @@ elif example_num == 3:
     num_iters = 3
     # initialising
     X0 = jnp.asarray([0.2, 0.3, 0.8]).reshape((3, model.domain_dim))
+    #X0 = jnp.asarray([0.3, 0.4, 0.7]).reshape((3, 1))
     y0 = objective(X0)
     model.fit(X0, y0, compute_cov=True)
 

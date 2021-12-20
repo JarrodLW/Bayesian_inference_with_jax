@@ -1,6 +1,7 @@
 from Regressors import GaussianProcessReg
 from Algorithms import ML_for_hyperparams
 import optax
+import jax.numpy as jnp
 
 
 class Experiment():
@@ -9,7 +10,7 @@ class Experiment():
     If the user intends to specify a model (either complete or incomplete) then the 'ML_est' flag can be turned to
     False. Data must be provided. '''
 
-    def __init__(self, Xsamples=None, ysamples=None, obs_noise_stdev=1e-3, ML_est=True):
+    def __init__(self, Xsamples=None, ysamples=None, obs_noise_stdev=1e-2, ML_est=True):
         # the noise level is chosen as small as possible while maintaining numerical stability
 
         assert Xsamples is not None, "No input data points provided."
@@ -20,13 +21,17 @@ class Experiment():
         self.ysamples = ysamples
         self._model = None
         self.ML_optimizer = optax.adam(learning_rate=1e-2)  # hard-coded for now.
+        # we set the prior mean to be the mean of the observed values
+        mean = jnp.average(ysamples)
+        # this is a bit of a hack, but the prior mean is expected to be a function, so...
+        default_prior_func = (lambda x: mean)
 
         if ML_est:
             hyperparam_dict = {'sigma': None, 'lengthscale': None}
             optimal_param_dict, _ = ML_for_hyperparams(Xsamples, ysamples, self.ML_optimizer,
                                                        hyperparam_dict=hyperparam_dict,
-                                                       obs_noise_stdev=obs_noise_stdev, prior_mean=None,
-                                                       prior_mean_kwargs=None, iters=5000, num_restarts=10)
+                                                       obs_noise_stdev=obs_noise_stdev, prior_mean=default_prior_func,
+                                                       prior_mean_kwargs=None, iters=5000, num_restarts=5)
 
             print("Kernel parameters estimated by maximum-likelihood: " + str(optimal_param_dict))
 

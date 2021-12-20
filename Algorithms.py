@@ -167,6 +167,7 @@ def log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam
                                obs_noise_stdev=obs_noise_stdev,
                                prior_mean=prior_mean, prior_mean_kwargs=prior_mean_kwargs)
     model.fit(Xsamples, ysamples, compute_cov=True)
+    # log_prob = jnp.nan_to_num(model.log_marg_likelihood)
     log_prob = model.log_marg_likelihood
 
     return log_prob
@@ -218,10 +219,8 @@ def ML_for_hyperparams(Xsamples, ysamples, optimizer,
         for i in range(iters):
             x, opt_state, loss_value = step(x, opt_state)
 
-            # TODO: extend these conditions?
-            # none of the hyperparameters can be negative
-            # if jnp.any(x < 0):
-            #     break
+            if i%100 == 0:
+                print('Loss at iter ' + str(i) + ': ' + str(loss_value))
 
         return x, loss_value
 
@@ -229,7 +228,7 @@ def ML_for_hyperparams(Xsamples, ysamples, optimizer,
     x_cands = jnp.zeros((num_restarts, len(hyper_to_be_updated)), dtype=jnp.float32)
     x_cand_losses = jnp.zeros(num_restarts, dtype=jnp.float32)
     for i in range(num_restarts):
-        init = jnp.array(np.random.random(len(hyper_to_be_updated)))
+        init = jnp.array(jnp.log(np.random.random(len(hyper_to_be_updated))))
         x_opt, final_loss = optimization(init)
         x_cands = x_cands.at[i, :].set(jnp.ravel(x_opt))
         x_cand_losses = x_cand_losses.at[i].set(final_loss)

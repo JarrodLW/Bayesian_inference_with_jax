@@ -5,14 +5,22 @@ from AcquisitionFuncs import *
 from Algorithms import opt_routine, log_marg_likelihood
 import matplotlib.pyplot as plt
 from matplotlib import cm
+import optax
+
+# def quadratic(x, a, b, c):
+#     return jnp.ravel(a * x ** 2 + b * x + c)
 
 
 def objective(x):
     return jnp.ravel(x ** 2 * jnp.sin(5 * jnp.pi * x) ** 6.0)
 
 
+#X0 = jnp.asarray(list(np.linspace(0., 1., num=150))).reshape((150, 1))
 #X0 = jnp.asarray([0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]).reshape((7, 1))
-X0 = jnp.asarray([0.3, 0.4, 0.7]).reshape((3, 1))
+X0 = jnp.asarray(list(np.linspace(0., 1., num=10))).reshape((10, 1))
+#X0 = jnp.asarray([0.2, 0.35, 0.5, 0.65, 0.8]).reshape((5, 1))
+#X0 = jnp.asarray([0.3, 0.4, 0.7]).reshape((3, 1))
+#X0 = jnp.asarray([0.2, 0.3, 0.8]).reshape((3, 1))
 y0 = objective(X0)
 
 exp = Experiment(X0, y0)
@@ -30,6 +38,7 @@ def log_marg_likelihood_wrapper(Xsamples, ysamples, sigma, lengthscale):
     log_prob = log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam_kwargs=kernel_hyperparam_kwargs,
                             obs_noise_stdev=1e-3)
     return log_prob
+
 
 for i, sigma in enumerate(sigmas):
     for j, lengthscale in enumerate(lengthscales):

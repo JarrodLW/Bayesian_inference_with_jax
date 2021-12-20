@@ -84,6 +84,8 @@ class GaussianProcessReg:
         # TODO: this assert interacts badly with jax grad, fix this.
         # assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, self.L.T) - covs_plus_noise)))
         #       /jnp.sqrt(jnp.sum(jnp.square(covs_plus_noise)))) < 1e-6, "factorisation error too large"
+        # print(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, self.L.T) - covs_plus_noise)))
+        #         / jnp.sqrt(jnp.sum(jnp.square(covs_plus_noise))))
 
         # computing log marginal likelihood
         y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
@@ -103,8 +105,10 @@ class GaussianProcessReg:
         v = solve_triangular(self.L, test_train_covs, lower=True)
         pred_covs = k - jnp.matmul(v.T, v)
 
-        #TODO: this assert interacts badly with jax grad, fix this.
+        # TODO: this assert interacts badly with jax grad, fix this.
         # assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, alpha)) - y_shifted)))/
         #           (jnp.sqrt(jnp.sum(jnp.square(y_shifted)))+1e-7)) < 1e-6
+        # print(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, self.alpha)) - self.y_shifted)))/
+        #           (jnp.sqrt(jnp.sum(jnp.square(self.y_shifted)))))
 
         return pred_mu, pred_covs
