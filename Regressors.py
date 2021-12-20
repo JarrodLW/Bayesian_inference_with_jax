@@ -7,11 +7,19 @@ from Kernels import RBF, Periodic, Matern
 from time import time
 
 
-class GaussianProcessReg():
+class GaussianProcessReg:
     # instance is a Gaussian process model with prescribed prior, with fit and predict methods.
 
-    def __init__(self, kernel_type='RBF', domain_dim=1, sigma=1., obs_noise_stdev=0.1, lengthscale=1.0, period=None,
-                 order=None, prior_mean=None, prior_mean_kwargs=None): #TODO: rename obs_noise_stdev and sigma
+    # def __init__(self, kernel_type='RBF', domain_dim=1, sigma=1., obs_noise_stdev=0.1, lengthscale=1.0, period=None,
+    #              order=None, prior_mean=None, prior_mean_kwargs=None): #TODO: rename obs_noise_stdev and sigma
+
+    # obs noise just big enough to have a regularising effect when "inverting"
+
+    # def __init__(self, kernel_type='RBF', domain_dim=1, sigma=None, obs_noise_stdev=1e-6, lengthscale=None, period=None,
+    #              order=None, prior_mean=None, prior_mean_kwargs=None): #TODO: rename obs_noise_stdev and sigma
+
+    def __init__(self, kernel_type='RBF', domain_dim=1, kernel_hyperparam_kwargs={}, obs_noise_stdev=1e-6,
+                prior_mean=None, prior_mean_kwargs=None):  # TODO: rename obs_noise_stdev and sigma
 
         self.mu = None
         self.std = None
@@ -34,13 +42,19 @@ class GaussianProcessReg():
         else:
             self.prior_mean_kwargs = {}
 
+        self.kernel_hyperparam_kwargs = kernel_hyperparam_kwargs
+        sigma = kernel_hyperparam_kwargs['sigma']
+        lengthscale = kernel_hyperparam_kwargs['lengthscale']
+
         if kernel_type == 'RBF':
             self.kernel = RBF(sigma, lengthscale)
 
         elif kernel_type == 'Periodic':
+            period = kernel_hyperparam_kwargs['period']
             self.kernel = Periodic(sigma, lengthscale, period)
 
         elif kernel_type == 'Matern':
+            order = kernel_hyperparam_kwargs['order']
             self.kernel = Matern(sigma, lengthscale, order)
 
     def fit(self, Xsamples, ysamples, compute_cov=False):
@@ -67,8 +81,9 @@ class GaussianProcessReg():
         covs_plus_noise = self.covs + self.obs_noise_stdev**2*jnp.identity(self.covs.shape[0])
         self.L = cholesky(covs_plus_noise, lower=True)
 
-        assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, self.L.T) - covs_plus_noise)))
-              /jnp.sqrt(jnp.sum(jnp.square(covs_plus_noise)))) < 1e-6, "factorisation error too large"
+        # TODO: this assert interacts badly with jax grad, fix this.
+        # assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, self.L.T) - covs_plus_noise)))
+        #       /jnp.sqrt(jnp.sum(jnp.square(covs_plus_noise)))) < 1e-6, "factorisation error too large"
 
         # computing log marginal likelihood
         y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
@@ -77,24 +92,18 @@ class GaussianProcessReg():
         self.log_marg_likelihood = - (1/2)*jnp.dot(self.y, self.alpha) - jnp.sum(jnp.diag(self.L)) \
                                    - (Xsamples.shape[0]/2)*jnp.log(2*jnp.pi)
 
-        print("num of samples:" + str(Xsamples.shape[0]))
-
-
     def predict(self, Xsamples):
 
         # should I be saving the mu and std to memory?
         test_train_covs = self.kernel(self.X, Xsamples)
-
-        # y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
-        # alpha = solve_triangular(self.L.T, solve_triangular(self.L, y_shifted, lower=True), lower=False)  # following nomenclature in Rasmussen
         pred_mu = jnp.matmul(test_train_covs.T, self.alpha)
         pred_mu += self.prior_mean(Xsamples, **self.prior_mean_kwargs)
         k = self.kernel(Xsamples, Xsamples)
 
         v = solve_triangular(self.L, test_train_covs, lower=True)
         pred_covs = k - jnp.matmul(v.T, v)
-        #pred_std = np.sqrt(np.abs(np.diag(pred_covs)))
 
+        #TODO: this assert interacts badly with jax grad, fix this.
         # assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, alpha)) - y_shifted)))/
         #           (jnp.sqrt(jnp.sum(jnp.square(y_shifted)))+1e-7)) < 1e-6
 

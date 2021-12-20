@@ -92,15 +92,35 @@ class Matern(Kernels):
     # \sigma^2*(2**(1-nu)/Gamma(nu))*(sqrt(2*nu)*\Vert x - x'\Vert/l)**nu*K_nu(sqrt(2*nu)*\Vert x - x'\Vert/l)
     # nu is the "order"
     # K_nu is the modified Bessel function of the second kind
-    #TODO: re-implement with jax
 
+    # TODO: add gradient/Jacobian implementation for orders 1.5 and 2.5, and error statement for order 0.5 (not diff'able)
     def __init__(self, stdev, lengthscale, order, dist='euclidean'):
 
-        def cov_func(x1, x2):
-            rescaled_dist = jnp.sqrt(2 * order) * jnp.sqrt(rescaled_sq_pair_dists(x1, x2, lengthscale, dist))
-            rescaled_dist = jnp.maximum(1.e-8, rescaled_dist)  # How does this interact with jax grad?
-            covs = stdev ** 2 * (2 ** (1 - order) / gamma(order)) * (rescaled_dist ** order) \
-                   * kv(order, rescaled_dist)
-            return covs
+        if order==0.5:
+            def cov_func(x1, x2):
+                d = jnp.sqrt(rescaled_sq_pair_dists(x1, x2, lengthscale, dist))
+                return stdev**2*jnp.exp(-d/lengthscale)
+
+        elif order==1.5:
+            def cov_func(x1, x2):
+                d = jnp.sqrt(rescaled_sq_pair_dists(x1, x2, lengthscale, dist))
+                return stdev**2*(1 + jnp.sqrt(3)*d/lengthscale)*jnp.exp(-jnp.sqrt(3)*d/lengthscale)
+
+        elif order==2.5:
+            def cov_func(x1, x2):
+                d = jnp.sqrt(rescaled_sq_pair_dists(x1, x2, lengthscale, dist))
+                return stdev**2*(1 + jnp.sqrt(5)*d/lengthscale + 5*d**2/(3*lengthscale**2))*\
+                       jnp.exp(-jnp.sqrt(5)*d/lengthscale)
+
+        else:
+            print("Matern kernel of order "+str(order)+" not implemented")
+
+        # general
+        # def cov_func(x1, x2):
+        #     rescaled_dist = jnp.sqrt(2 * order) * jnp.sqrt(rescaled_sq_pair_dists(x1, x2, lengthscale, dist))
+        #     rescaled_dist = jnp.maximum(1.e-8, rescaled_dist)  # How does this interact with jax grad?
+        #     covs = stdev ** 2 * (2 ** (1 - order) / gamma(order)) * (rescaled_dist ** order) \
+        #            * kv(order, rescaled_dist)
+        #     return covs
 
         super().__init__(cov_func)

@@ -83,12 +83,16 @@ elif example_num == 3:
     def quadratic(x, a, b, c):
         return jnp.ravel(a * x ** 2 + b * x + c)
 
-    # model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, prior_mean=quadratic,
-    #                            prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
-    #model = GaussianProcessReg(sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01)
+    kernel_hyperparam_kwargs = {'sigma': 0.1, 'lengthscale': 0.05}
+    model = GaussianProcessReg(kernel_hyperparam_kwargs=kernel_hyperparam_kwargs, obs_noise_stdev=0.01, prior_mean=quadratic,
+                               prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+
+    # model = GaussianProcessReg(kernel_hyperparam_kwargs=kernel_hyperparam_kwargs, obs_noise_stdev=0.01)
     #model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.05, obs_noise_stdev=0.01, period=2)
-    model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.1, obs_noise_stdev=0.01, period=2,
-                               prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+    # model = GaussianProcessReg(kernel_type='Periodic', sigma=0.1, lengthscale=0.1, obs_noise_stdev=0.01, period=2,
+    #                            prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
+    # model = GaussianProcessReg(kernel_type='Matern', sigma=0.1, order=2.5, lengthscale=0.25, obs_noise_stdev=0.01,
+    #                            prior_mean=quadratic, prior_mean_kwargs={'a': 0.5, 'b': 0, 'c': 0})
 
     # defining acquisition function and algorithm etc
     optimizer = optax.adam(learning_rate=1e-2)
@@ -107,7 +111,7 @@ elif example_num == 3:
     # X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective, return_surrogates=False,
     #                                    acq_alg=acq_alg, dynamic_plot=True) #TODO: X0, y0 incorporated into model?
 
-    X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective, return_surrogates=False,
+    X, y, surrogate_data = opt_routine(acq_func, model, num_iters, objective, return_surrogates=False,
                                        dynamic_plot=True)  # TODO: X0, y0 incorporated into model?
 
     x_vals = jnp.arange(0, 1, 1 / 50)

@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import time
 import optax
 import jax
+from Regressors import GaussianProcessReg
 
 
 class OptaxAcqAlgBuilder:
@@ -56,10 +57,15 @@ class OptaxAcqAlgBuilder:
         return x_opt, final_loss
 
 
-def random_acq(acq_func, model, num_samples=1000): #, std_weight=1., margin=None):
+def random_acq(acq_func, model, num_samples=None):
     # TODO allow for batching
     # TODO allow for differing domain geometries
+
     domain_dim = model.domain_dim
+
+    if num_samples is None:
+        num_samples = 100**domain_dim
+
     # random search, generate random samples
     Xsamples = np.random.random((num_samples, domain_dim))
     scores = acq_func(Xsamples, model)
@@ -69,13 +75,15 @@ def random_acq(acq_func, model, num_samples=1000): #, std_weight=1., margin=None
     return Xsamples[ix].reshape(1, domain_dim), - scores[ix] # any point returning scores?
 
 
-def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_acq,
+# def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_acq,
+#                 return_surrogates=False, return_acq_func_vals=False, dynamic_plot=False):
+def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
                 return_surrogates=False, return_acq_func_vals=False, dynamic_plot=False):
     #TODO: refactor. This is a mess. Also, plotting functionality will only work in 1d
 
-    x_vals = X0
-    y_vals = y0
-    ix = jnp.argmax(y0)
+    x_vals = X0 = model.X
+    y_vals = y0 = model.y
+    ix = jnp.argmax(y_vals)
 
     if return_surrogates or dynamic_plot: #TODO should be using jax?
         surrogate_means = np.zeros((num_iters, 1000))
@@ -90,6 +98,7 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_ac
 
         num_restarts = 5  # remove hard-coded restart num
 
+        # TODO change this to keep only those x which are an improvement. I don't need to be storing everything.
         x_cands = jnp.zeros((num_restarts, model.domain_dim), dtype=jnp.float32)
         x_cand_losses = jnp.zeros(num_restarts, dtype=jnp.float32)
         for j in range(num_restarts):
@@ -147,3 +156,96 @@ def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_ac
     print('Best Result: x=%.3f, y=%.3f' % (model.X[ix], model.y[ix]))
 
     return x_vals, y_vals, surrogate_data
+
+# learning hyperparameters
+
+
+def log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam_kwargs=None, obs_noise_stdev=1e-3,
+                                prior_mean=None, prior_mean_kwargs=None):
+
+    model = GaussianProcessReg(kernel_type=kernel_type, kernel_hyperparam_kwargs=kernel_hyperparam_kwargs,
+                               obs_noise_stdev=obs_noise_stdev,
+                               prior_mean=prior_mean, prior_mean_kwargs=prior_mean_kwargs)
+    model.fit(Xsamples, ysamples, compute_cov=True)
+    log_prob = model.log_marg_likelihood
+
+    return log_prob
+
+
+def ML_for_hyperparams(Xsamples, ysamples, optimizer,
+                       kernel_type='RBF', hyperparam_dict=None, obs_noise_stdev=1e-3, prior_mean=None,
+                       prior_mean_kwargs=None, iters=5000, num_restarts=5):
+
+    ''' Returns a maximum marginal likelihood estimator for the kernel hyper-parameters, in the form of a dictionary.
+    The dictionary object hyperparam_dict should only contain the hyper-parameters pertaining to the kernel type;
+    this is already taken care of in the "model" method of the Experiment class. '''
+
+    # TODO: add in checks that hyperparam_dict contains only the keys relevant for the given kernel?
+    hyper_to_be_updated = [k for k in hyperparam_dict.keys() if hyperparam_dict[k] is None]
+    print("Optimising for kernel hyperparameters: " + ', '.join(hyper_to_be_updated))
+
+    def acq_objective(x):
+        # x is a vector. Zeroth entry corresponds to ln(sigma), first entry to ln(lengthscale) ---we've remapped onto
+        # positive reals using the exponential.
+
+        assert x.shape[0] == len(hyper_to_be_updated), "Variable dimension inconsistent with number of parameters " \
+                                                       "to be estimated"
+
+        # building the variable dictionary of hyper-parameters
+        variable_hyperparam_dict = {}
+        for key in hyperparam_dict.keys():
+            if hyperparam_dict[key] is not None:
+                variable_hyperparam_dict[key] = hyperparam_dict[key]
+        # inserting the x's into the hype-param dictionary
+        for j, key in enumerate(hyper_to_be_updated):
+            variable_hyperparam_dict[key] = jnp.exp(x[j])
+
+        return - log_marg_likelihood(Xsamples, ysamples, kernel_type=kernel_type,
+                                     kernel_hyperparam_kwargs=variable_hyperparam_dict,
+                                     obs_noise_stdev=obs_noise_stdev,
+                                     prior_mean=prior_mean, prior_mean_kwargs=prior_mean_kwargs)
+
+    def optimization(x: optax.Params) -> optax.Params:
+        opt_state = optimizer.init(x)
+
+        @jax.jit
+        def step(x, opt_state):
+            loss_value, grads = jax.value_and_grad(acq_objective)(x)
+            updates, opt_state = optimizer.update(grads, opt_state, x)
+            x = optax.apply_updates(x, updates)
+            return x, opt_state, loss_value
+
+        for i in range(iters):
+            x, opt_state, loss_value = step(x, opt_state)
+
+            # TODO: extend these conditions?
+            # none of the hyperparameters can be negative
+            # if jnp.any(x < 0):
+            #     break
+
+        return x, loss_value
+
+    # TODO change this to keep only those x which are an improvement
+    x_cands = jnp.zeros((num_restarts, len(hyper_to_be_updated)), dtype=jnp.float32)
+    x_cand_losses = jnp.zeros(num_restarts, dtype=jnp.float32)
+    for i in range(num_restarts):
+        init = jnp.array(np.random.random(len(hyper_to_be_updated)))
+        x_opt, final_loss = optimization(init)
+        x_cands = x_cands.at[i, :].set(jnp.ravel(x_opt))
+        x_cand_losses = x_cand_losses.at[i].set(final_loss)
+
+    ind_best = jnp.argmin(x_cand_losses)
+    optimal_params = jnp.exp(x_cands[jnp.argmin(x_cand_losses), :])
+    final_loss = x_cand_losses[ind_best]
+
+    # now populate the dictionary of hyperparameters
+    updated_hyperparam_dict = {}
+    # the fixed values remain the same
+    for key in hyperparam_dict.keys():
+        if hyperparam_dict[key] is not None:
+            updated_hyperparam_dict[key] = hyperparam_dict[key]
+    for j, key in enumerate(hyper_to_be_updated):
+        updated_hyperparam_dict[key] = optimal_params[j]
+
+    return updated_hyperparam_dict, final_loss
+

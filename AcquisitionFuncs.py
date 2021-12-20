@@ -5,8 +5,8 @@ import jax.numpy as jnp
 import numpy as np
 from jax.scipy.stats import norm
 
-
 # acquisition functions
+# TODO: implement Thompson sampling, too?
 
 class BaseFunc:
     # class structure for algebra of acquisition functions
