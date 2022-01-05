@@ -8,10 +8,11 @@ import matplotlib.pyplot as plt
 from Regressors import *
 from AcquisitionFuncs import *
 from Algorithms import *
+from numpy.random import normal
 
-## trying to find maximum of function
+## trying to find maximum of a function
 
-example_num = 3
+example_num = 4
 
 if example_num == 1:
 
@@ -110,13 +111,47 @@ elif example_num == 3:
     model.fit(X0, y0, compute_cov=True)
 
     #optimisation
-    # X, y, surrogate_data = opt_routine(acq_func, model, num_iters, X0, y0, objective, return_surrogates=False,
-    #                                    acq_alg=acq_alg, dynamic_plot=True) #TODO: X0, y0 incorporated into model?
-
     X, y, surrogate_data = opt_routine(acq_func, model, num_iters, objective, return_surrogates=False,
-                                       dynamic_plot=True)  # TODO: X0, y0 incorporated into model?
+                                       acq_alg=acq_alg, dynamic_plot=True)
+
+    # X, y, surrogate_data = opt_routine(acq_func, model, num_iters, objective, return_surrogates=False,
+    #                                    dynamic_plot=True)
 
     x_vals = jnp.arange(0, 1, 1 / 50)
     y_vals = jax.vmap(objective)(x_vals)
     plt.figure()
     plt.plot(np.asarray(x_vals), np.asarray(y_vals))
+
+
+elif example_num == 4:
+
+    def objective(x, noise=0.05):
+        noise = normal(loc=0, scale=noise)
+        return jnp.ravel(
+            (1 - 5 * (x[:, 0] - 0.5) ** 2 - 5 * (x[:, 1] - 0.5) ** 2) * jnp.cos(3 * jnp.pi * (x[:, 0] - 0.5)) ** 6.0
+            * jnp.cos(3 * jnp.pi * (x[:, 1] - 0.5)) ** 4.0 + noise)
+
+    kernel_hyperparam_kwargs = {'sigma': 0.35, 'lengthscale': 0.11}
+    model = GaussianProcessReg(kernel_hyperparam_kwargs=kernel_hyperparam_kwargs, domain_dim=2, obs_noise_stdev=0.001)
+
+    optimizer = optax.adam(learning_rate=1e-2)
+    acq_alg = OptaxAcqAlgBuilder(optimizer)
+    acq_func = acq_func_builder('PI', margin=0.01)
+
+    domain_dim = 2
+    num_initial_samples = 10
+    X0 = jnp.asarray(np.random.random((num_initial_samples, domain_dim)))
+    y0 = objective(X0)
+
+    model.fit(X0, y0, compute_cov=True)
+
+    num_iters = 1
+    # acquisition by best of random sample
+    # X, y, surrogate_data = opt_routine(acq_func, model, num_iters, objective, return_surrogates=False,
+    #                                    dynamic_plot=False)
+
+    # acquisition by adam
+    X, y, surrogate_data = opt_routine(acq_func, model, num_iters, objective, return_surrogates=False,
+                                       acq_alg=acq_alg, dynamic_plot=True)
+
+

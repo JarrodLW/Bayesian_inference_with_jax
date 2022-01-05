@@ -8,15 +8,8 @@ from time import time
 
 
 class GaussianProcessReg:
-    # instance is a Gaussian process model with prescribed prior, with fit and predict methods.
-
-    # def __init__(self, kernel_type='RBF', domain_dim=1, sigma=1., obs_noise_stdev=0.1, lengthscale=1.0, period=None,
-    #              order=None, prior_mean=None, prior_mean_kwargs=None): #TODO: rename obs_noise_stdev and sigma
-
+    ''' Instance is a Gaussian process model with prescribed prior, with fit and predict methods.'''
     # obs noise just big enough to have a regularising effect when "inverting"
-
-    # def __init__(self, kernel_type='RBF', domain_dim=1, sigma=None, obs_noise_stdev=1e-6, lengthscale=None, period=None,
-    #              order=None, prior_mean=None, prior_mean_kwargs=None): #TODO: rename obs_noise_stdev and sigma
 
     def __init__(self, kernel_type='RBF', domain_dim=1, kernel_hyperparam_kwargs={}, obs_noise_stdev=1e-6,
                 prior_mean=None, prior_mean_kwargs=None):  # TODO: rename obs_noise_stdev and sigma
@@ -84,13 +77,11 @@ class GaussianProcessReg:
         # TODO: this assert interacts badly with jax grad, fix this.
         # assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, self.L.T) - covs_plus_noise)))
         #       /jnp.sqrt(jnp.sum(jnp.square(covs_plus_noise)))) < 1e-6, "factorisation error too large"
-        # print(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, self.L.T) - covs_plus_noise)))
-        #         / jnp.sqrt(jnp.sum(jnp.square(covs_plus_noise))))
 
         # computing log marginal likelihood
         y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
         self.alpha = solve_triangular(self.L.T, solve_triangular(self.L, y_shifted, lower=True),
-                                 lower=False)  # following nomenclature in Rasmussen
+                                 lower=False)  # following nomenclature in Rasmussen & Williams
         self.log_marg_likelihood = - (1/2)*jnp.dot(self.y, self.alpha) - jnp.sum(jnp.diag(self.L)) \
                                    - (Xsamples.shape[0]/2)*jnp.log(2*jnp.pi)
 
@@ -108,7 +99,5 @@ class GaussianProcessReg:
         # TODO: this assert interacts badly with jax grad, fix this.
         # assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, alpha)) - y_shifted)))/
         #           (jnp.sqrt(jnp.sum(jnp.square(y_shifted)))+1e-7)) < 1e-6
-        # print(jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, self.alpha)) - self.y_shifted)))/
-        #           (jnp.sqrt(jnp.sum(jnp.square(self.y_shifted)))))
 
         return pred_mu, pred_covs

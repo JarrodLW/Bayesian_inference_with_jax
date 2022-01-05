@@ -60,8 +60,8 @@ print('lengthscale: ' + str(lengthscales[np.argmax(Z)%num]))
 # Bayes Opt
 
 model = exp._model
-num_iters = 3
+num_iters = 6
 acq_func = acq_func_builder('PI', margin=0.01)
 
 X, y, surrogate_data = opt_routine(acq_func, model, num_iters, objective, return_surrogates=False,
-                                       dynamic_plot=True)  # TODO: X0, y0 incorporated into model?
+                                       dynamic_plot=True)

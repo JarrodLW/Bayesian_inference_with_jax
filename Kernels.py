@@ -9,6 +9,9 @@ from scipy.special import gamma, kv
 
 class Kernels():
 
+    ''' Instances of this class may be multiplied and linear combinations taken,
+    allowing for bespoke kernels to be easily built. '''
+
     def __init__(self, cov_func):
         self.cov_func = cov_func
 
@@ -26,13 +29,12 @@ class Kernels():
 
 
 def rescaled_sq_pair_dists(x1, x2, lengthscale=1., dist='euclidean'):
+
+    # Note: scipy has a distance implementation, but I don't think there's an analogue in jax yet, hence this
+    # implementation.
     # lengthscale: either a scalar or list of same dimension as domain
     # TODO: add error when lengthscale has length not equal to base dimension?
     # TODO: assert error when x1 and x2 has mismatched .shape[1]
-
-    # height = x1.shape[0]
-    # width = x2.shape[0]
-    #dm = jnp.zeros((height, width))
 
     # rescaling
     x1 = x1/lengthscale
@@ -63,7 +65,8 @@ class RBF(Kernels):
 class Periodic(Kernels):
     # TODO: finish implementation of gradient
     # \sigma^2\exp(-2\sin^2(\pi\Vert x - x'\Vert/p)/l^2)
-    # jax isn't able to compute the gradient at zero, despite being well-defined, so we have to code this up by hand
+    # jax isn't able to compute the gradient at zero, despite being well-defined, so we have to code the Jacobian up
+    # by hand
 
     def __init__(self, stdev, lengthscale, period, dist='euclidean'): # only supports isotropic lengthscale
         # TODO: assert error if you try to pass lengthscale list?

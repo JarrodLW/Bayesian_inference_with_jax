@@ -3,7 +3,6 @@
 import jax.numpy as jnp
 import numpy as np
 import matplotlib.pyplot as plt
-import time
 import optax
 import jax
 from Regressors import GaussianProcessReg
@@ -85,11 +84,18 @@ def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
     y_vals = y0 = model.y
     ix = jnp.argmax(y_vals)
 
+    # only hold on to surrogates and/or plot dynamically if in dimension 1
+    # TODO: add dynamic function plotting for dimension equal to 2
+    if model.domain_dim != 1:
+        return_surrogates = False
+        dynamic_plot = False
+
     if return_surrogates or dynamic_plot: #TODO should be using jax?
         surrogate_means = np.zeros((num_iters, 1000))
         surrogate_stds = np.zeros((num_iters, 1000))
         acq_func_vals = np.zeros((num_iters, 1000))
-        test_points = jnp.asarray(np.arange(0, 1, 1 / 1000)).reshape((1000, x_vals.shape[1]))
+        #test_points = jnp.asarray(np.arange(0, 1, 1 / 1000)).reshape((1000, x_vals.shape[1]))
+        test_points = jnp.asarray(sorted(np.random.random((1000, x_vals.shape[1]))))
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
 
     for i in range(num_iters):
@@ -111,7 +117,7 @@ def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
         final_loss = x_cand_losses[ind_best]
 
         if return_surrogates or dynamic_plot:
-            mu, covs = model.predict(test_points)  # TODO: needn't compute these if not returning surrogate or plotting
+            mu, covs = model.predict(test_points)
             stds = jnp.sqrt(jnp.diagonal(covs))
             surrogate_means[i, :] = mu
             surrogate_stds[i, :] = stds
@@ -128,7 +134,7 @@ def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
             ax1.plot(jnp.ravel(test_points), mu)
             ax1.fill_between(jnp.ravel(test_points), mu - stds, mu + stds, alpha=0.4)
             ax2.plot(jnp.ravel(test_points), acq_func_val)
-            ax2.scatter(x, -final_loss) # we take the minus since the loss is the negative of the acquisition
+            ax2.scatter(x, - final_loss) # we take the minus since the loss is the negative of the acquisition
             #plt.plot(jnp.ravel(test_points), acq_func_val)
             plt.pause(1e-17)
             #time.sleep(2.)
@@ -137,7 +143,7 @@ def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
         actual = objective(x)
         # summarize the finding
         est, _ = model.predict(x)
-        print('>x=%.3f, f()=%3f, actual=%.3f' % (x, est, actual))
+        print(f">x={str(x[0])}, f()={est[0]:.3f}, actual={actual[0]:.3f}")
         # update the model
         model.fit(x, actual)
 
@@ -151,16 +157,17 @@ def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
     else:
         surrogate_data = None
 
-    print('First best guess: x=%.3f, y=%.3f' % (X0[ix], y0[ix]))
+    #print('First best guess: x=%.3f, y=%.3f' % (X0[ix], y0[ix]))
+    print(f"First best guess: x={str(X0[ix])}, y={y0[ix]:.3f}")
     ix = np.argmax(model.y)
-    print('Best Result: x=%.3f, y=%.3f' % (model.X[ix], model.y[ix]))
+    #print('Best Result: x=%.3f, y=%.3f' % (model.X[ix], model.y[ix]))
+    print(f"First best guess: x={str(model.X[ix])}, y={model.y[ix]:.3f}")
 
     return x_vals, y_vals, surrogate_data
 
 # learning hyperparameters
 
-
-def log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam_kwargs=None, obs_noise_stdev=1e-3,
+def log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam_kwargs=None, obs_noise_stdev=1e-2,
                                 prior_mean=None, prior_mean_kwargs=None):
 
     model = GaussianProcessReg(kernel_type=kernel_type, kernel_hyperparam_kwargs=kernel_hyperparam_kwargs,
@@ -174,12 +181,12 @@ def log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam
 
 
 def ML_for_hyperparams(Xsamples, ysamples, optimizer,
-                       kernel_type='RBF', hyperparam_dict=None, obs_noise_stdev=1e-3, prior_mean=None,
+                       kernel_type='RBF', hyperparam_dict=None, obs_noise_stdev=1e-2, prior_mean=None,
                        prior_mean_kwargs=None, iters=5000, num_restarts=5):
 
-    ''' Returns a maximum marginal likelihood estimator for the kernel hyper-parameters, in the form of a dictionary.
+    ''' Returns a maximum marginal likelihood estimate for the kernel hyper-parameters, in the form of a dictionary.
     The dictionary object hyperparam_dict should only contain the hyper-parameters pertaining to the kernel type;
-    this is already taken care of in the "model" method of the Experiment class. '''
+    # this is already taken care of in the "model" method of the Experiment class. '''
 
     # TODO: add in checks that hyperparam_dict contains only the keys relevant for the given kernel?
     hyper_to_be_updated = [k for k in hyperparam_dict.keys() if hyperparam_dict[k] is None]
