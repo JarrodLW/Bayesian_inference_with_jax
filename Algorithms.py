@@ -1,4 +1,5 @@
 # Created
+import copy
 
 import jax.numpy as jnp
 import numpy as np
@@ -182,16 +183,21 @@ def log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam
 
 def ML_for_hyperparams(Xsamples, ysamples, optimizer,
                        kernel_type='RBF', hyperparam_dict=None, obs_noise_stdev=1e-2, prior_mean=None,
-                       prior_mean_kwargs=None, iters=5000, num_restarts=5):
+                       prior_mean_kwargs=None, iters=2000, num_restarts=20):
 
     ''' Returns a maximum marginal likelihood estimate for the kernel hyper-parameters, in the form of a dictionary.
     The dictionary object hyperparam_dict should only contain the hyper-parameters pertaining to the kernel type;
-    # this is already taken care of in the "model" method of the Experiment class. '''
+    # this is already taken care of in the "model" method of the Experiment class. Only the hyperparameter keys with
+    None values will be optimised for. '''
 
     # TODO: add in checks that hyperparam_dict contains only the keys relevant for the given kernel?
     hyper_to_be_updated = [k for k in hyperparam_dict.keys() if hyperparam_dict[k] is None]
-    print("Optimising for kernel hyperparameters: " + ', '.join(hyper_to_be_updated))
 
+    if len(hyper_to_be_updated) == 0:
+        print("All kernel hyper-parameters provided; no ML estimation needed.")
+        return
+
+    print("Optimising for kernel hyper-parameters: " + ', '.join(hyper_to_be_updated))
     def acq_objective(x):
         # x is a vector. Zeroth entry corresponds to ln(sigma), first entry to ln(lengthscale) ---we've remapped onto
         # positive reals using the exponential.
@@ -245,13 +251,17 @@ def ML_for_hyperparams(Xsamples, ysamples, optimizer,
     final_loss = x_cand_losses[ind_best]
 
     # now populate the dictionary of hyperparameters
-    updated_hyperparam_dict = {}
+    variable_hyperparam_dict = {}
+    for j, key in enumerate(hyper_to_be_updated):
+        variable_hyperparam_dict[key] = optimal_params[j]
+
+    updated_hyperparam_dict = copy.deepcopy(variable_hyperparam_dict)
     # the fixed values remain the same
     for key in hyperparam_dict.keys():
         if hyperparam_dict[key] is not None:
             updated_hyperparam_dict[key] = hyperparam_dict[key]
-    for j, key in enumerate(hyper_to_be_updated):
-        updated_hyperparam_dict[key] = optimal_params[j]
+
+    print("Kernel parameters estimated by maximum-likelihood: " + str(variable_hyperparam_dict))
 
     return updated_hyperparam_dict, final_loss
 

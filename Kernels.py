@@ -52,14 +52,58 @@ def rescaled_sq_pair_dists(x1, x2, lengthscale=1., dist='euclidean'):
 
 class RBF(Kernels):
 
-    # \sigma^2\exp(-\Vert x - x'\Vert^2/2l**2)
+    # \sigma^2\exp(-\Vert x - x'\Vert^2/2l^2)
+    _sigma = None
+    _lengthscale = None
 
-    def __init__(self, stdev, lengthscale, dist='euclidean'):
+    def __init__(self, sigma=None, lengthscale=None, dist='euclidean'):
 
-        def cov_func(x1, x2):
-            return stdev ** 2 * jnp.exp(-0.5*rescaled_sq_pair_dists(x1, x2, lengthscale, dist))
+        self.sigma = sigma
+        self.lengthscale = lengthscale
+        self.dist = dist
+        self.make_func()
 
-        super().__init__(cov_func)
+    def make_func(self):
+
+        if self.sigma is not None and self.lengthscale is not None:
+
+            def cov_func(x1, x2):
+                return self.sigma ** 2 * jnp.exp(-0.5 * rescaled_sq_pair_dists(x1, x2, self.lengthscale, self.dist))
+
+            self.cov_func = cov_func
+
+        else:
+            self.cov_func = None
+
+    @property
+    def hyperparams(self):
+        return {'sigma': self.sigma, 'lengthscale': self.lengthscale}
+
+    @property
+    def sigma(self):
+        return self._sigma
+
+    @sigma.setter
+    def sigma(self, value):
+        # TODO: this is incompatible with jax, in the same way as the assert statements in model fit/predict methods --fix this.
+        # if value is not None:
+        #     print(value)
+        #     if value < 0:
+        #         raise ValueError("Negative standard deviation not possible")
+        self._sigma = value
+        self.make_func()
+
+    @property
+    def lengthscale(self):
+        return self._lengthscale
+
+    @lengthscale.setter
+    def lengthscale(self, value):
+        # if value is not None:
+        #     if value <= 0:
+        #         raise ValueError("Non-positive lengthscale not possible")
+        self._lengthscale = value
+        self.make_func()
 
 
 class Periodic(Kernels):
@@ -68,13 +112,17 @@ class Periodic(Kernels):
     # jax isn't able to compute the gradient at zero, despite being well-defined, so we have to code the Jacobian up
     # by hand
 
-    def __init__(self, stdev, lengthscale, period, dist='euclidean'): # only supports isotropic lengthscale
+    def __init__(self, sigma, lengthscale, period, dist='euclidean'): # only supports isotropic lengthscale
         # TODO: assert error if you try to pass lengthscale list?
+
+        # self.stdev = stdev
+        # self.lengthscale = lengthscale
+        # self.period = period
 
         #@jax.custom_jvp
         def cov_func(x1, x2):
-            covs = stdev ** 2 * jnp.exp(-2*jnp.sin(np.pi*jnp.sqrt(rescaled_sq_pair_dists(x1, x2, dist=dist))/
-                                                   period)**2/lengthscale**2)
+            covs = sigma ** 2 * jnp.exp(-2 * jnp.sin(np.pi * jnp.sqrt(rescaled_sq_pair_dists(x1, x2, dist=dist)) /
+                                                     period) ** 2 / lengthscale ** 2)
             return covs
 
         # @cov_func.defjvp
@@ -96,23 +144,27 @@ class Matern(Kernels):
     # nu is the "order"
     # K_nu is the modified Bessel function of the second kind
 
-    # TODO: add gradient/Jacobian implementation for orders 1.5 and 2.5, and error statement for order 0.5 (not diff'able)
-    def __init__(self, stdev, lengthscale, order, dist='euclidean'):
+    # TODO: add gradient/Jacobian implementation for orders 1.5 and 2.5 and error statement for order 0.5 (not diff'able)
+    def __init__(self, sigma, lengthscale, order, dist='euclidean'):
+
+        # self.stdev = stdev
+        # self.lengthscale = lengthscale
+        # self.order = order
 
         if order==0.5:
             def cov_func(x1, x2):
                 d = jnp.sqrt(rescaled_sq_pair_dists(x1, x2, lengthscale, dist))
-                return stdev**2*jnp.exp(-d/lengthscale)
+                return sigma ** 2 * jnp.exp(-d / lengthscale)
 
         elif order==1.5:
             def cov_func(x1, x2):
                 d = jnp.sqrt(rescaled_sq_pair_dists(x1, x2, lengthscale, dist))
-                return stdev**2*(1 + jnp.sqrt(3)*d/lengthscale)*jnp.exp(-jnp.sqrt(3)*d/lengthscale)
+                return sigma ** 2 * (1 + jnp.sqrt(3) * d / lengthscale) * jnp.exp(-jnp.sqrt(3) * d / lengthscale)
 
         elif order==2.5:
             def cov_func(x1, x2):
                 d = jnp.sqrt(rescaled_sq_pair_dists(x1, x2, lengthscale, dist))
-                return stdev**2*(1 + jnp.sqrt(5)*d/lengthscale + 5*d**2/(3*lengthscale**2))*\
+                return sigma ** 2 * (1 + jnp.sqrt(5) * d / lengthscale + 5 * d ** 2 / (3 * lengthscale ** 2)) * \
                        jnp.exp(-jnp.sqrt(5)*d/lengthscale)
 
         else:

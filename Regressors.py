@@ -35,12 +35,12 @@ class GaussianProcessReg:
         else:
             self.prior_mean_kwargs = {}
 
-        self.kernel_hyperparam_kwargs = kernel_hyperparam_kwargs
-        sigma = kernel_hyperparam_kwargs['sigma']
-        lengthscale = kernel_hyperparam_kwargs['lengthscale']
+        #self.kernel_hyperparam_kwargs = kernel_hyperparam_kwargs
+        #sigma = kernel_hyperparam_kwargs.get('sigma', None)
+        #lengthscale = kernel_hyperparam_kwargs.get('lengthscale', None)
 
         if kernel_type == 'RBF':
-            self.kernel = RBF(sigma, lengthscale)
+            self.kernel = RBF(**kernel_hyperparam_kwargs)
 
         elif kernel_type == 'Periodic':
             period = kernel_hyperparam_kwargs['period']
