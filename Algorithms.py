@@ -78,6 +78,7 @@ def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
                 return_surrogates=False, return_acq_func_vals=False, dynamic_plot=False):
 
     #TODO: refactor. This is a mess. Also, plotting functionality will only work in 1d
+    # TODO: add assert that acq_alg, if not "random_acq" is an optax instance
 
     x_vals = X0 = model.X
     y_vals = y0 = model.y
@@ -96,6 +97,8 @@ def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
         #test_points = jnp.asarray(np.arange(0, 1, 1 / 1000)).reshape((1000, x_vals.shape[1]))
         test_points = jnp.asarray(sorted(np.random.random((1000, x_vals.shape[1]))))
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+        ax1.set_title("Surrogate function")
+        ax2.set_title("Acquisition function")
 
     for i in range(num_iters):
         # select the next point to sample

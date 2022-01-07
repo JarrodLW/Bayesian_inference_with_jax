@@ -78,8 +78,9 @@ class Experiment():
         # re-fit to data
         self.model.fit(self.Xsamples, self.ysamples)
 
-    def run_bayes_opt(self, num_iters=1, acq_func=None, dynamic_plot=False):
+    def run_bayes_opt(self, num_iters=1, acq_func=None, dynamic_plot=False, acq_alg=None):
         # runs Bayesian optimisation to propose next x coordinate at which to run experiment
+        # TODO: add condition to opt_routine that if only 1 iteration being called, give option not to evaluate the objective but simply "request" it
 
         if self.objective is None:
             print("No objective function provided. Can't perform Bayesian optimisation. ")
@@ -88,7 +89,11 @@ class Experiment():
         if acq_func is None:
             acq_func = acq_func_builder('PI', margin=0.01)
 
-        opt_routine(acq_func, self.model, num_iters, self.objective, dynamic_plot=dynamic_plot)
+        if acq_alg is None:
+            opt_routine(acq_func, self.model, num_iters, self.objective, dynamic_plot=dynamic_plot)
+
+        else:
+            opt_routine(acq_func, self.model, num_iters, self.objective, acq_alg=acq_alg, dynamic_plot=dynamic_plot)
 
 
 

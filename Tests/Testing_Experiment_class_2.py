@@ -2,9 +2,7 @@ import jax
 import jax.numpy as jnp
 from Experiment import Experiment
 from AcquisitionFuncs import *
-from Algorithms import opt_routine, log_marg_likelihood
-import matplotlib.pyplot as plt
-from matplotlib import cm
+from Algorithms import opt_routine, OptaxAcqAlgBuilder
 import optax
 import numpy as np
 
@@ -80,15 +78,22 @@ acq_func = acq_func_builder('PI', margin=0.01)
 X, y, surrogate_data = opt_routine(acq_func, exp.model, num_iters, objective, return_surrogates=False, dynamic_plot=True)
 
 # 14. no user input, default RBF kernel with parameters inferred by mle, with subsequent Bayesian optimisation inside of
-# experiment class, default 'PI' acquisition function optimised by random search (also default)
+# experiment class, default 'PI' acquisition function optimised by random search (also default),
+# then the same again for a further 3 iterations
 exp = Experiment(X0, y0, prior_mean=quadratic, objective=objective)
 exp.run_bayes_opt(num_iters=5, dynamic_plot=True)
+exp.run_bayes_opt(num_iters=3, dynamic_plot=True)
 
 # 15. user setting up model via the experiment class, using mle, and performing subsequent Bayesian optimisation,
 # default 'PI' acquisition function optimised by random search (also default)
 
 # 16. user setting up model via the experiment class, using mle, and performing subsequent Bayesian optimisation,
 # acquisition function specified, optimised by specified optax optimiser
+exp = Experiment(X0, y0, prior_mean=quadratic, objective=objective)
+acq_func = acq_func_builder('EI', margin=0.01)
+optimizer = optax.adam(learning_rate=1e-2)
+acq_alg = OptaxAcqAlgBuilder(optimizer)
+exp.run_bayes_opt(num_iters=5, acq_func=acq_func, acq_alg=acq_alg, dynamic_plot=True)
 
 # 17. user setting up model via the experiment class, using mle, and performing subsequent Bayesian optimisation,
 # acquisition function specified, optimised by specified optax optimiser, followed by new mle estimation and re-fitting
