@@ -71,14 +71,12 @@ def random_acq(acq_func, model, num_samples=None):
     scores = acq_func(Xsamples, model)
     # locate the index of the largest scores
     ix = jnp.argmax(scores)
-    #print("Best score " + str(np.amax(scores)))
     return Xsamples[ix].reshape(1, domain_dim), - scores[ix] # any point returning scores?
 
 
-# def opt_routine(acq_func, model, num_iters, X0, y0, objective, acq_alg=random_acq,
-#                 return_surrogates=False, return_acq_func_vals=False, dynamic_plot=False):
 def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
                 return_surrogates=False, return_acq_func_vals=False, dynamic_plot=False):
+
     #TODO: refactor. This is a mess. Also, plotting functionality will only work in 1d
 
     x_vals = X0 = model.X
@@ -158,15 +156,13 @@ def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
     else:
         surrogate_data = None
 
-    #print('First best guess: x=%.3f, y=%.3f' % (X0[ix], y0[ix]))
     print(f"First best guess: x={str(X0[ix])}, y={y0[ix]:.3f}")
     ix = np.argmax(model.y)
-    #print('Best Result: x=%.3f, y=%.3f' % (model.X[ix], model.y[ix]))
     print(f"First best guess: x={str(model.X[ix])}, y={model.y[ix]:.3f}")
 
     return x_vals, y_vals, surrogate_data
 
-# learning hyperparameters
+# learning hyper-parameters
 
 def log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam_kwargs=None, obs_noise_stdev=1e-2,
                                 prior_mean=None, prior_mean_kwargs=None):

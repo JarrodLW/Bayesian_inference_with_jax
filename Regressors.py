@@ -9,9 +9,9 @@ from time import time
 
 class GaussianProcessReg:
     ''' Instance is a Gaussian process model with prescribed prior, with fit and predict methods.'''
-    # obs noise just big enough to have a regularising effect when "inverting"
+    # obs noise just big enough to have a regularising effect when solving linear algebraic systems
 
-    def __init__(self, kernel_type='RBF', domain_dim=1, kernel_hyperparam_kwargs={}, obs_noise_stdev=1e-6,
+    def __init__(self, kernel_type='RBF', domain_dim=1, kernel_hyperparam_kwargs=None, obs_noise_stdev=1e-6,
                 prior_mean=None, prior_mean_kwargs=None):  # TODO: rename obs_noise_stdev and sigma
 
         self.mu = None
@@ -24,9 +24,13 @@ class GaussianProcessReg:
         self.domain_dim = domain_dim
         self.alpha = None
         self.log_marg_likelihood = None
+        self.kernel_type = kernel_type
 
         if prior_mean is None:
             prior_mean = lambda x: 0
+
+        if kernel_hyperparam_kwargs is None:
+            kernel_hyperparam_kwargs = {}
 
         self.prior_mean = prior_mean
 
@@ -35,20 +39,16 @@ class GaussianProcessReg:
         else:
             self.prior_mean_kwargs = {}
 
-        #self.kernel_hyperparam_kwargs = kernel_hyperparam_kwargs
-        #sigma = kernel_hyperparam_kwargs.get('sigma', None)
-        #lengthscale = kernel_hyperparam_kwargs.get('lengthscale', None)
-
         if kernel_type == 'RBF':
             self.kernel = RBF(**kernel_hyperparam_kwargs)
 
         elif kernel_type == 'Periodic':
-            period = kernel_hyperparam_kwargs['period']
-            self.kernel = Periodic(sigma, lengthscale, period)
+            #period = kernel_hyperparam_kwargs['period']
+            self.kernel = Periodic(**kernel_hyperparam_kwargs)
 
         elif kernel_type == 'Matern':
-            order = kernel_hyperparam_kwargs['order']
-            self.kernel = Matern(sigma, lengthscale, order)
+            #order = kernel_hyperparam_kwargs['order']
+            self.kernel = Matern(**kernel_hyperparam_kwargs)
 
     def fit(self, Xsamples, ysamples, compute_cov=False):
         print("Fitting GP to data")

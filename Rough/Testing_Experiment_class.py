@@ -80,11 +80,10 @@ if slightly_less_clueless_user_mode == True:
     exp = Experiment(X0, y0, kernel_type='Periodic', kernel_hyperparams={'sigma': 0.5})
 
 
-
 # collected
 exp = Experiment(X0, y0)
 exp = Experiment(X0, y0, mle=False)
-exp = Experiment(X0, y0, kernel_hyperparams={'sigma': 0.5, 'lengthscale': 0.01})
+exp = Experiment(X0, y0, kernel_hyperparams={'lengthscale': 0.01})
 exp = Experiment(X0, y0, kernel_type='Periodic', kernel_hyperparams={'sigma': 0.5})
 
 

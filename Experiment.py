@@ -1,5 +1,6 @@
 from Regressors import GaussianProcessReg
-from Algorithms import ML_for_hyperparams
+from Algorithms import ML_for_hyperparams, opt_routine
+from AcquisitionFuncs import acq_func_builder
 import optax
 import jax.numpy as jnp
 
@@ -11,7 +12,7 @@ class Experiment():
     function, the constant being the mean of the ysamples. '''
 
     def __init__(self, Xsamples=None, ysamples=None, kernel_type='RBF', kernel_hyperparams=None,
-                 obs_noise_stdev=1e-2, prior_mean=None, mle=True, ML_optimizer = None):
+                 obs_noise_stdev=1e-2, prior_mean=None, mle=True, ML_optimizer=None):
 
         if kernel_hyperparams is None:
             kernel_hyperparams = {}
@@ -27,9 +28,8 @@ class Experiment():
             ML_optimizer = optax.adam(learning_rate=1e-1)
 
         self.ML_optimizer = ML_optimizer
-        # we set the prior mean to be the mean of the observed values
+        # we set the prior mean to be the mean of the observed values, as default
         mean = jnp.average(ysamples)
-        # this is a bit of a hack, but the prior mean is expected to be a function, so...
         if prior_mean is None:
             prior_mean = (lambda x: mean)
 
@@ -50,19 +50,27 @@ class Experiment():
             print("All hyper-parameters specified; nothing to be estimated.")
             return
 
-        #print(self.model.kernel.hyperparams)
         optimal_param_dict, _ = ML_for_hyperparams(self.Xsamples, self.ysamples, self.ML_optimizer,
+                                                   kernel_type=self.model.kernel_type,
                                                    hyperparam_dict=self.model.kernel.hyperparams,
                                                    obs_noise_stdev=self.model.obs_noise_stdev,
                                                    prior_mean=self.model.prior_mean,
                                                    prior_mean_kwargs=None)
 
         # now build the model with the identified kernel hyperparameters
-        self.model = GaussianProcessReg(kernel_hyperparam_kwargs=optimal_param_dict,
-                                         obs_noise_stdev=self.model.obs_noise_stdev)
+        self.model = GaussianProcessReg(kernel_type=self.model.kernel_type, domain_dim=self.model.domain_dim,
+                                        kernel_hyperparam_kwargs=optimal_param_dict,
+                                         obs_noise_stdev=self.model.obs_noise_stdev, prior_mean=self.model.prior_mean)
 
         # re-fit to data
         self.model.fit(self.Xsamples, self.ysamples, compute_cov=True)
+
+
+    # def run_bayes_opt(self, num_iters=1, acq_func=acq_func_builder('PI', margin=0.01)):
+    #     # runs Bayesian optimisation to propose next x coordinate at which to run experiment
+    #
+    #     X, y, surrogate_data = opt_routine(acq_func, self.model, num_iters, objective, return_surrogates=False,
+    #                                        dynamic_plot=False)
 
 
 
