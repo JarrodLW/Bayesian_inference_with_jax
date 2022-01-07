@@ -158,7 +158,7 @@ def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
 
     print(f"First best guess: x={str(X0[ix])}, y={y0[ix]:.3f}")
     ix = np.argmax(model.y)
-    print(f"First best guess: x={str(model.X[ix])}, y={model.y[ix]:.3f}")
+    print(f"Best so far: x={str(model.X[ix])}, y={model.y[ix]:.3f}")
 
     return x_vals, y_vals, surrogate_data
 
@@ -170,7 +170,7 @@ def log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam
     model = GaussianProcessReg(kernel_type=kernel_type, kernel_hyperparam_kwargs=kernel_hyperparam_kwargs,
                                obs_noise_stdev=obs_noise_stdev,
                                prior_mean=prior_mean, prior_mean_kwargs=prior_mean_kwargs)
-    model.fit(Xsamples, ysamples, compute_cov=True, verbose=False)
+    model.fit(Xsamples, ysamples, verbose=False)
     # log_prob = jnp.nan_to_num(model.log_marg_likelihood)
     log_prob = model.log_marg_likelihood
 

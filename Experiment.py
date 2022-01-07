@@ -1,3 +1,5 @@
+import copy
+
 from Regressors import GaussianProcessReg
 from Algorithms import ML_for_hyperparams, opt_routine
 from AcquisitionFuncs import acq_func_builder
@@ -12,7 +14,7 @@ class Experiment():
     function, the constant being the mean of the ysamples. '''
 
     def __init__(self, Xsamples=None, ysamples=None, kernel_type='RBF', kernel_hyperparams=None,
-                 obs_noise_stdev=1e-2, prior_mean=None, mle=True, ML_optimizer=None):
+                 obs_noise_stdev=1e-2, prior_mean=None, mle=True, ML_optimizer=None, objective=None):
 
         if kernel_hyperparams is None:
             kernel_hyperparams = {}
@@ -24,15 +26,18 @@ class Experiment():
         self.Xsamples = Xsamples
         self.ysamples = ysamples
 
-        if ML_optimizer is None:
-            ML_optimizer = optax.adam(learning_rate=1e-1)
-
-        self.ML_optimizer = ML_optimizer
         # we set the prior mean to be the mean of the observed values, as default
         mean = jnp.average(ysamples)
         if prior_mean is None:
             prior_mean = (lambda x: mean)
 
+        if ML_optimizer is None:
+            ML_optimizer = optax.adam(learning_rate=1e-1)
+
+        self.ML_optimizer = ML_optimizer
+        self.objective = objective
+
+        # initialize a GP model
         self.model = GaussianProcessReg(kernel_type=kernel_type, domain_dim=Xsamples.shape[1],
                                         kernel_hyperparam_kwargs=kernel_hyperparams,
                                         obs_noise_stdev=obs_noise_stdev,
@@ -71,14 +76,19 @@ class Experiment():
                                          obs_noise_stdev=self.model.obs_noise_stdev, prior_mean=self.model.prior_mean)
 
         # re-fit to data
-        self.model.fit(self.Xsamples, self.ysamples, compute_cov=True)
+        self.model.fit(self.Xsamples, self.ysamples)
 
+    def run_bayes_opt(self, num_iters=1, acq_func=None, dynamic_plot=False):
+        # runs Bayesian optimisation to propose next x coordinate at which to run experiment
 
-    # def run_bayes_opt(self, num_iters=1, acq_func=acq_func_builder('PI', margin=0.01)):
-    #     # runs Bayesian optimisation to propose next x coordinate at which to run experiment
-    #
-    #     X, y, surrogate_data = opt_routine(acq_func, self.model, num_iters, objective, return_surrogates=False,
-    #                                        dynamic_plot=False)
+        if self.objective is None:
+            print("No objective function provided. Can't perform Bayesian optimisation. ")
+            return
+
+        if acq_func is None:
+            acq_func = acq_func_builder('PI', margin=0.01)
+
+        opt_routine(acq_func, self.model, num_iters, self.objective, dynamic_plot=dynamic_plot)
 
 
 

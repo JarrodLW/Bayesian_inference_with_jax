@@ -1,10 +1,13 @@
 # Created 06/10/2021
 
 #import numpy as np
+import jax.lax
 import jax.numpy as jnp
 from jax.scipy.linalg import cholesky, solve_triangular
 from Kernels import RBF, Periodic, Matern
 from time import time
+from jax.lax import stop_gradient as sg
+import copy
 
 
 class GaussianProcessReg:
@@ -17,6 +20,7 @@ class GaussianProcessReg:
         self.mu = None
         self.std = None
         self.covs = None
+        self._hyperparams_cache = None
         self.y = None
         self.X = None
         self.obs_noise_stdev = obs_noise_stdev
@@ -48,7 +52,9 @@ class GaussianProcessReg:
         elif kernel_type == 'Matern':
             self.kernel = Matern(**kernel_hyperparam_kwargs)
 
-    def fit(self, Xsamples, ysamples, compute_cov=False, verbose=True):
+    def fit(self, Xsamples, ysamples, verbose=True):
+        # Note to self: fit is probably bad terminology ---we don't actually "fit" anything but simply
+        # compute certain quantities that are needed for prediction and mle etc.
 
         if any([val is None for val in self.kernel.hyperparams.values()]):
             print("Cannot fit as kernel hyper-parameters have yet to be specified.")
@@ -57,10 +63,18 @@ class GaussianProcessReg:
         if verbose:
             print("Fitting GP to data")
 
-        if compute_cov:
+        # check that the hyperparams of the kernel haven't been changed; else recompute cov matrix from scratch.
+        if self._hyperparams_cache != self.kernel.hyperparams:
+            if verbose:
+                print("Kernel hyper-parameters have been modified. Recomputing cov matrix. ")
+            self.covs = None
+
+        if self.covs is None:
+            # this is the case of initial fitting, in which case the samples are all the data that it has access to
             self.covs = self.kernel(Xsamples, Xsamples)
             self.X = Xsamples
             self.y = ysamples
+            self._hyperparams_cache = copy.deepcopy(self.kernel.hyperparams)
 
         else:
             # cross covariances
@@ -78,14 +92,20 @@ class GaussianProcessReg:
         covs_plus_noise = self.covs + self.obs_noise_stdev**2*jnp.identity(self.covs.shape[0])
         self.L = cholesky(covs_plus_noise, lower=True)
 
-        # TODO: this assert interacts badly with jax grad, fix this.
-        # assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, self.L.T) - covs_plus_noise)))
-        #       /jnp.sqrt(jnp.sum(jnp.square(covs_plus_noise)))) < 1e-6, "factorisation error too large"
+        # TODO: this assert interacts badly with jax gradient, fix this.
+        # assert sg((jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(sg(self.L), sg(self.L.T)) - sg(covs_plus_noise))))
+        #       /jnp.sqrt(jnp.sum(jnp.square(sg(covs_plus_noise))))) < 1e-6), "factorisation error too large"
 
         # computing log marginal likelihood
         y_shifted = self.y - self.prior_mean(self.X, **self.prior_mean_kwargs)
         self.alpha = solve_triangular(self.L.T, solve_triangular(self.L, y_shifted, lower=True),
                                  lower=False)  # following nomenclature in Rasmussen & Williams
+
+        # TODO: this assert interacts badly with jax gradient, fix this.
+        # assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, self.alpha))
+        #                                        - y_shifted))) /
+        #            (jnp.sqrt(jnp.sum(jnp.square(y_shifted))) + 1e-7)) < 1e-6, "matrix inversion error too large"
+
         self.log_marg_likelihood = - (1/2)*jnp.dot(self.y, self.alpha) - jnp.sum(jnp.diag(self.L)) \
                                    - (Xsamples.shape[0]/2)*jnp.log(2*jnp.pi)
 
@@ -103,9 +123,5 @@ class GaussianProcessReg:
 
         v = solve_triangular(self.L, test_train_covs, lower=True)
         pred_covs = k - jnp.matmul(v.T, v)
-
-        # TODO: this assert interacts badly with jax grad, fix this.
-        # assert (jnp.sqrt(jnp.sum(jnp.square(jnp.matmul(self.L, jnp.matmul(self.L.T, alpha)) - y_shifted)))/
-        #           (jnp.sqrt(jnp.sum(jnp.square(y_shifted)))+1e-7)) < 1e-6
 
         return pred_mu, pred_covs
