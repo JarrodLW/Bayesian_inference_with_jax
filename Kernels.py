@@ -201,6 +201,11 @@ class Matern(Kernels):
 
         self.sigma = sigma
         self.lengthscale = lengthscale
+
+        if order is None:
+            order = '3/2'
+            print("Setting order to default of 3/2")
+
         self.order = order
         self.dist = dist
         self.make_func()
@@ -209,17 +214,17 @@ class Matern(Kernels):
 
         if self.sigma is not None and self.lengthscale is not None and self.order is not None:
 
-            if self.order == 0.5:
+            if self.order == '1/2':
                 def cov_func(x1, x2):
                     d = jnp.sqrt(rescaled_sq_pair_dists(x1, x2, self.lengthscale, self.dist))
                     return self.sigma ** 2 * jnp.exp(-d / self.lengthscale) # check this expression!
 
-            elif self.order == 1.5:
+            elif self.order == '3/2':
                 def cov_func(x1, x2):
                     d = jnp.sqrt(rescaled_sq_pair_dists(x1, x2, self.lengthscale, self.dist))
                     return self.sigma ** 2 * (1 + jnp.sqrt(3) * d / self.lengthscale) * jnp.exp(-jnp.sqrt(3) * d / self.lengthscale)
 
-            elif self.order == 2.5:
+            elif self.order == '5/2':
                 def cov_func(x1, x2):
                     d = jnp.sqrt(rescaled_sq_pair_dists(x1, x2, self.lengthscale, self.dist))
                     return self.sigma ** 2 * (1 + jnp.sqrt(5) * d / self.lengthscale + 5 * d ** 2 / (3 * self.lengthscale ** 2)) * \

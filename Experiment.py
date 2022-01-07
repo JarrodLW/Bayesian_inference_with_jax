@@ -40,6 +40,8 @@ class Experiment():
 
         if mle:
             self.maximum_likelihood_estimation()
+        else:
+            print("mle flag off, so no maximum-likelihood estimation of kernel hyper-parameters is being performed.")
 
     def maximum_likelihood_estimation(self):
         ''' This will run maximum likelihood estimation on all those 'hyperparam_dict' keys with None values and
@@ -49,6 +51,12 @@ class Experiment():
         if None not in self.model.kernel.hyperparams.values():
             print("All hyper-parameters specified; nothing to be estimated.")
             return
+
+        if self.model.kernel_type == 'Matern':
+            if self.model.kernel.order is None:
+                print("Optimisation of Matern kernel order not currently supported; only discrete orders implemented. "
+                      "Please specify order.")
+                return
 
         optimal_param_dict, _ = ML_for_hyperparams(self.Xsamples, self.ysamples, self.ML_optimizer,
                                                    kernel_type=self.model.kernel_type,

@@ -170,7 +170,7 @@ def log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam
     model = GaussianProcessReg(kernel_type=kernel_type, kernel_hyperparam_kwargs=kernel_hyperparam_kwargs,
                                obs_noise_stdev=obs_noise_stdev,
                                prior_mean=prior_mean, prior_mean_kwargs=prior_mean_kwargs)
-    model.fit(Xsamples, ysamples, compute_cov=True)
+    model.fit(Xsamples, ysamples, compute_cov=True, verbose=False)
     # log_prob = jnp.nan_to_num(model.log_marg_likelihood)
     log_prob = model.log_marg_likelihood
 
@@ -179,7 +179,7 @@ def log_marg_likelihood(Xsamples, ysamples, kernel_type='RBF', kernel_hyperparam
 
 def ML_for_hyperparams(Xsamples, ysamples, optimizer,
                        kernel_type='RBF', hyperparam_dict=None, obs_noise_stdev=1e-2, prior_mean=None,
-                       prior_mean_kwargs=None, iters=2000, num_restarts=20):
+                       prior_mean_kwargs=None, iters=2000, num_restarts=20, report_loss=False):
 
     ''' Returns a maximum marginal likelihood estimate for the kernel hyper-parameters, in the form of a dictionary.
     The dictionary object hyperparam_dict should only contain the hyper-parameters pertaining to the kernel type;
@@ -228,8 +228,9 @@ def ML_for_hyperparams(Xsamples, ysamples, optimizer,
         for i in range(iters):
             x, opt_state, loss_value = step(x, opt_state)
 
-            if i%100 == 0:
-                print('Loss at iter ' + str(i) + ': ' + str(loss_value))
+            if report_loss:
+                if i%100 == 0:
+                    print('Loss at iter ' + str(i) + ': ' + str(loss_value))
 
         return x, loss_value
 

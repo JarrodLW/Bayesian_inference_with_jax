@@ -43,15 +43,19 @@ class GaussianProcessReg:
             self.kernel = RBF(**kernel_hyperparam_kwargs)
 
         elif kernel_type == 'Periodic':
-            #period = kernel_hyperparam_kwargs['period']
             self.kernel = Periodic(**kernel_hyperparam_kwargs)
 
         elif kernel_type == 'Matern':
-            #order = kernel_hyperparam_kwargs['order']
             self.kernel = Matern(**kernel_hyperparam_kwargs)
 
-    def fit(self, Xsamples, ysamples, compute_cov=False):
-        print("Fitting GP to data")
+    def fit(self, Xsamples, ysamples, compute_cov=False, verbose=True):
+
+        if any([val is None for val in self.kernel.hyperparams.values()]):
+            print("Cannot fit as kernel hyper-parameters have yet to be specified.")
+            return
+
+        if verbose:
+            print("Fitting GP to data")
 
         if compute_cov:
             self.covs = self.kernel(Xsamples, Xsamples)
@@ -86,6 +90,10 @@ class GaussianProcessReg:
                                    - (Xsamples.shape[0]/2)*jnp.log(2*jnp.pi)
 
     def predict(self, Xsamples):
+
+        if any([val is None for val in self.kernel.hyperparams.values()]):
+            print("Cannot predict as kernel hyper-parameters have yet to be specified.")
+            return
 
         # should I be saving the mu and std to memory?
         test_train_covs = self.kernel(self.X, Xsamples)

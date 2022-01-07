@@ -1,5 +1,6 @@
 # Created 06/10/2021
 # Runs regression and optimisation examples for choice of prior mean function, acquisition function and kernel
+# These no longer work!
 
 from Regressors import *
 from Utils import plot

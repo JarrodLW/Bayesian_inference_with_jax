@@ -6,6 +6,7 @@ from Algorithms import opt_routine, log_marg_likelihood
 import matplotlib.pyplot as plt
 from matplotlib import cm
 import optax
+import numpy as np
 
 # def quadratic(x, a, b, c):
 #     return jnp.ravel(a * x ** 2 + b * x + c)
@@ -80,16 +81,55 @@ if slightly_less_clueless_user_mode == True:
     exp = Experiment(X0, y0, kernel_type='Periodic', kernel_hyperparams={'sigma': 0.5})
 
 
-# collected
-exp = Experiment(X0, y0)
-exp = Experiment(X0, y0, mle=False)
-exp = Experiment(X0, y0, kernel_hyperparams={'lengthscale': 0.01})
-exp = Experiment(X0, y0, kernel_type='Periodic', kernel_hyperparams={'sigma': 0.5})
-
-
 X, y, surrogate_data = opt_routine(acq_func, model, num_iters, objective, return_surrogates=False,
                                            dynamic_plot=True)
 
+## Some examples
+
+# note: if mle is called
+
+# TODO: use sympy to convert user's string input into a prior mean function of the right form
+def quadratic(x, a=0.5, b=0, c=0):
+    return jnp.ravel(a * x ** 2 + b * x + c)
+
+# no user input, default RBF kernel with parameters inferred by mle
+exp = Experiment(X0, y0)
+
+# no user input, but mel flag turned off: default RBF kernel but parameters initialised as None
+exp = Experiment(X0, y0, mle=False)
+
+# user input from outset: default RBF kernel, all parameters provided
+exp = Experiment(X0, y0, kernel_hyperparams={'sigma': 0.5, 'lengthscale': 0.01})
+
+# user input from outset: default RBF kernel, not all parameters provided (mle called)
+exp = Experiment(X0, y0, kernel_hyperparams={'sigma': 0.5})
+
+# user input from outset: specified kernel, non-default prior, not all parameters provided (mle called)
+exp = Experiment(X0, y0, kernel_type='Periodic', kernel_hyperparams={'sigma': 0.5})
+
+# user input from outset: non-default prior mean, default prior, not all parameters provided (mle called)
+exp = Experiment(X0, y0, kernel_hyperparams={'sigma': 0.5}, prior_mean=quadratic)
+
+# user resetting all hyper-parameters
+exp = Experiment(X0, y0)
+exp.model.kernel.sigma = 0.3
+exp.model.kernel.lengthscale = 0.05
+exp.model.fit(X0, y0)  # need to re-fit model, this is not automatic
+
+# user resetting only some of the hyper-parameters
+exp = Experiment(X0, y0)
 exp.model.kernel.sigma = 0.3
 exp.model.kernel.lengthscale = None
-exp.maximum_likelihood_estimation()
+exp.maximum_likelihood_estimation()  # need to estimate remaining hyper-param, this is not automatic
+
+# user initialising experiment but turning off initial mle
+exp = Experiment(X0, y0, mle=False)
+exp.model.kernel.sigma = 0.3
+exp.model.kernel.lengthscale = None
+exp.maximum_likelihood_estimation()  # need to estimate remaining hyper-param, this is not automatic
+
+# user resetting prior mean function
+exp = Experiment(X0, y0, kernel_type='Periodic', kernel_hyperparams={'sigma': 0.5, 'lengthscale': 0.05, 'period': 0.1})
+exp.model.prior_mean = quadratic
+exp.maximum_likelihood_estimation()  # this does nothing, since all parameters fixed
+exp.model.fit(X0, y0)  # need to re-fit model, this is not automatic
