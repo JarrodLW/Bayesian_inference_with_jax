@@ -88,7 +88,7 @@ exp.run_bayes_opt(num_iters=3, dynamic_plot=True)
 # default 'PI' acquisition function optimised by random search (also default)
 
 # 16. user setting up model via the experiment class, using mle, and performing subsequent Bayesian optimisation,
-# acquisition function specified, optimised by specified optax optimiser
+# acquisition function specified, optimised by specified optax optimiser (adam)
 exp = Experiment(X0, y0, prior_mean=quadratic, objective=objective)
 acq_func = acq_func_builder('EI', margin=0.01)
 optimizer = optax.adam(learning_rate=1e-2)

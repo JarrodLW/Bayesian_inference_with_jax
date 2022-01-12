@@ -80,7 +80,9 @@ class Experiment():
 
     def run_bayes_opt(self, num_iters=1, acq_func=None, dynamic_plot=False, acq_alg=None):
         # runs Bayesian optimisation to propose next x coordinate at which to run experiment
-        # TODO: add condition to opt_routine that if only 1 iteration being called, give option not to evaluate the objective but simply "request" it
+        # TODO: add condition to opt_routine that if only 1 iteration being called, give option not to
+        #  evaluate the objective but simply "request" it and otherwise an error if 'None' is passed as objective
+        # TODO: input arguments put into init statement, too
 
         if self.objective is None:
             print("No objective function provided. Can't perform Bayesian optimisation. ")
