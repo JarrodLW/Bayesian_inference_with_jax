@@ -2,10 +2,11 @@
 % of Fourier truncation
 % based on https://www.chebfun.org/examples/disk/HeatEqn.html
 
-test_points = load('/Users/jlw31/PycharmProjects/DETI/Heat_Transfer_Example/value_communicating_file.mat');
+test_points = load('/Users/jlw31/PycharmProjects/DETI/Heat_Transfer_Example/value_communicating_file_2.mat');
 
 %u0 = 2 + diskfun.harmonic(0,2) + diskfun.harmonic(1,1);
-u0 = 2 + diskfun(@(x,y) exp(-5*(x+.2).^2 -5*(y-.2).^2) + 0.8* exp(-10*(x-.6).^2 -10*(y+.6).^2));
+u0 = diskfun(@(x,y) 2 + exp(-5*(x+.4).^2 -5*(y+.2).^2) + 0.8* exp(-10*(x-.5).^2 -10*(y+.6).^2) ...
++1.2*exp(-20*(x-.5).^2 -20*(y-.3).^2));
 alpha = 0.1;
 mu = 10.;
 dt = 0.01;                                  % Time step
@@ -13,33 +14,15 @@ tfinal = 2;                                 % Stopping time
 nsteps = ceil(tfinal/dt);                   % Number of time steps
 m = 20;                                     % Spatial discretization
 
-cos_coeffs = test_points.cos_coeffs;
-sin_coeffs = test_points.sin_coeffs;
-[num_points, num_cos_coefficients] = size(cos_coeffs);
-[num_points, num_sin_coefficients] = size(sin_coeffs);
+
+phase_list = test_points.phases;
 [num_points, domain_dim] = size(test_points.x_vals);
-%{Dirichlet_energy_diffs = [];%}
 obs = [];
 
 for ind=1:num_points
 
-    % Constructing the boundary function as a Fourier series
-    g = diskfun(@(theta, r) 1);
-
-    for k=1:num_cos_coefficients
-        a_coeff = double(cos_coeffs(ind, k));
-        g = g + diskfun(@(theta, r) a_coeff*cos(k*theta));
-        %g = g + diskfun(@(theta, r) 0.5*cos(k*theta+a_coeff));
-    end
-
-    for l=1:num_sin_coefficients
-        b_coeff = double(sin_coeffs(ind, l));
-        g = g + diskfun(@(theta, r) b_coeff*sin(l*theta));
-    end
-
-    %g = diskfun(@(theta, r) 1 + a_1*cos(theta) + b_1*sin(theta)...
-    %+ a_2*cos(2*theta) + b_2*sin(2*theta), 'polar');
-
+    phase = double(phase_list(ind));
+    g =  diskfun(@(theta, r) 1 + 0.5*cos(theta+phase));
     initial_bc = u0(:,1);
     up = u0;                                    % Previous time step
 
@@ -90,5 +73,5 @@ for ind=1:num_points
     obs(ind) = max_t0 - max_t1;
 
 end
-save('/Users/jlw31/PycharmProjects/DETI/Heat_Transfer_Example/value_communicating_file.mat',...
+save('/Users/jlw31/PycharmProjects/DETI/Heat_Transfer_Example/value_communicating_file_2.mat',...
 'obs', 'max_t0', '-append')

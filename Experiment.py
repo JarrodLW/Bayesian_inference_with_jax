@@ -1,5 +1,3 @@
-import copy
-
 from Regressors import GaussianProcessReg
 from Algorithms import ML_for_hyperparams, opt_routine
 from AcquisitionFuncs import acq_func_builder
@@ -96,6 +94,4 @@ class Experiment():
 
         else:
             opt_routine(acq_func, self.model, num_iters, self.objective, acq_alg=acq_alg, dynamic_plot=dynamic_plot)
-
-
 

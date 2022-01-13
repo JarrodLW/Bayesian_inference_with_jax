@@ -39,7 +39,7 @@ exp = Experiment(X0, y0, kernel_hyperparams={'sigma': 0.5})
 # 6. user input from outset: specified kernel, non-default prior, not all parameters provided (mle called)
 exp = Experiment(X0, y0, kernel_type='Periodic', kernel_hyperparams={'sigma': 0.5})
 
-# 7. same as above but with Matern kernel ---the order, considered to be discreet n+1/2, cannot be optimised and is set
+# 7. same as above but with Matern kernel ---the order, considered to be discreet (n+1/2), cannot be optimised and is set
 # to 3/2 by default. --running but producing 'nan' for lengthscale
 exp = Experiment(X0, y0, kernel_type='Matern', kernel_hyperparams={'sigma': 0.5})
 
