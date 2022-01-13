@@ -1,11 +1,12 @@
 % matlab script for solving heat equation IBVP with inhomogeneous Dirichlet boundary conditions, for arbitrary order
 % of Fourier truncation
+% using Matlab2021b
 % based on https://www.chebfun.org/examples/disk/HeatEqn.html
 
 test_points = load('/Users/jlw31/PycharmProjects/DETI/Heat_Transfer_Example/value_communicating_file.mat');
 
 %u0 = 2 + diskfun.harmonic(0,2) + diskfun.harmonic(1,1);
-u0 = 2 + diskfun(@(x,y) exp(-5*(x+.2).^2 -5*(y-.2).^2) + 0.8* exp(-10*(x-.6).^2 -10*(y+.6).^2));
+u0 = 2 + diskfun(@(x,y) exp(-5*(x+.2).^2 -5*(y-.2).^2) + 0.8* exp(-10*(x-.6).^2 -10*(y+.6).^2)); % initial temperature profile
 alpha = 0.1;
 mu = 10.;
 dt = 0.01;                                  % Time step
@@ -18,7 +19,6 @@ sin_coeffs = test_points.sin_coeffs;
 [num_points, num_cos_coefficients] = size(cos_coeffs);
 [num_points, num_sin_coefficients] = size(sin_coeffs);
 [num_points, domain_dim] = size(test_points.x_vals);
-%{Dirichlet_energy_diffs = [];%}
 obs = [];
 
 for ind=1:num_points
@@ -78,17 +78,11 @@ for ind=1:num_points
     axis('off'), colormap(jet), colorbar
     %}
 
-    %{
     Dirichlet_energy_t0 = norm(grad(u0));
     Dirichlet_energy = norm(grad(u));
     Dirichlet_energy_diff = Dirichlet_energy_t0 - Dirichlet_energy;
-    Dirichlet_energy_diffs(ind) = Dirichlet_energy_diff;
-    %}
-
-    max_t0 = max2(u0);
-    max_t1 = max2(u);
-    obs(ind) = max_t0 - max_t1;
+    obs(ind) = Dirichlet_energy_diff;
 
 end
 save('/Users/jlw31/PycharmProjects/DETI/Heat_Transfer_Example/value_communicating_file.mat',...
-'obs', 'max_t0', '-append')
+'obs', 'Dirichlet_energy_t0', '-append')

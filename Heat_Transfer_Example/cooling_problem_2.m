@@ -1,5 +1,6 @@
-% matlab script for solving heat equation IBVP with inhomogeneous Dirichlet boundary conditions, for arbitrary order
-% of Fourier truncation
+% matlab script for solving heat equation IBVP with inhomogeneous Dirichlet boundary conditions. The boundary temp g
+% has just one parameter here, the phase ---i.e. we can rotate g around the boundary.
+% using Matlab2021b
 % based on https://www.chebfun.org/examples/disk/HeatEqn.html
 
 test_points = load('/Users/jlw31/PycharmProjects/DETI/Heat_Transfer_Example/value_communicating_file_2.mat');
