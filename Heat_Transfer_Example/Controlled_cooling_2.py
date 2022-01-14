@@ -24,9 +24,8 @@ def objective(X: jnp.array):
 
 
 t0 = time()
-X0 = jnp.asarray([[0.1], [0.3], [0.6], [0.8], [0.9]])
-#X0 = jnp.asarray(list(np.linspace(0., 1., num=25))).reshape((25, 1))
-#X0 = jnp.asarray(list(np.linspace(0., 1., num=5))).reshape((5, 1))
+#X0 = jnp.asarray([[1.57/(2*np.pi)]])
+X0 = jnp.asarray(list(np.linspace(0., 1., num=25))).reshape((25, 1))
 objective(X0)
 results = io.loadmat(comm_file_path)
 t1 = time()
@@ -34,18 +33,8 @@ print("Time elapsed "+str(t1 - t0))
 
 max_t0 = results.get("max_t0")[0, 0]
 y0 = jnp.asarray(results.get("obs")).reshape(X0.shape[0])
-#y0 = jnp.asarray([1.3347493, 1.5273362, 1.6475159, 1.4136025, 1.3393945])
 x_vals = jnp.asarray(results.get("x_vals"))
 phases = jnp.asarray(results.get("phases"))
-
-# print(y0)
-#
-# y_vals = np.zeros(5)
-# for i in range(5):
-#     y = objective(X0[i].reshape((1, 1)))
-#     y_vals[i] = y
-#
-# print(y_vals)
 
 
 ## doing Bayes opt

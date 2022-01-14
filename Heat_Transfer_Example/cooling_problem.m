@@ -1,5 +1,6 @@
 % matlab script for solving heat equation IBVP with inhomogeneous Dirichlet boundary conditions, for arbitrary order
 % of Fourier truncation
+% I think the prescription of g is incorrect
 % using Matlab2021b
 % based on https://www.chebfun.org/examples/disk/HeatEqn.html
 
