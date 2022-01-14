@@ -130,14 +130,13 @@ def opt_routine(acq_func, model, num_iters, objective, acq_alg=random_acq,
             #plt.clf()
             ax1.cla()
             ax2.cla()
-            #ax1.set_xlim(-0.1, 1.1)
-            #ax1.set_ylim(-0.2, 1.1)
+            ax1.set_title('Surrogate function')
             ax1.scatter(jnp.ravel(x_vals), y_vals)
             ax1.plot(jnp.ravel(test_points), mu)
+            ax2.set_title('Acquisition function with next query point')
             ax1.fill_between(jnp.ravel(test_points), mu - stds, mu + stds, alpha=0.4)
             ax2.plot(jnp.ravel(test_points), acq_func_val)
             ax2.scatter(x, - final_loss) # we take the minus since the loss is the negative of the acquisition
-            #plt.plot(jnp.ravel(test_points), acq_func_val)
             plt.pause(1e-17)
             #time.sleep(2.)
 

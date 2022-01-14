@@ -5,21 +5,11 @@
 
 test_points = load('/Users/jlw31/PycharmProjects/DETI/Heat_Transfer_Example/value_communicating_file_2.mat');
 
-%u0 = 2 + diskfun.harmonic(0,2) + diskfun.harmonic(1,1);
-%u0 = diskfun(@(x,y) 2 + exp(-5*(x+.4).^2 -5*(y+.2).^2) + 0.8* exp(-10*(x-.5).^2 -10*(y+.6).^2) ...
-%+1.2*exp(-20*(x-.5).^2 -20*(y-.3).^2));
-%alpha = 0.1;
-%mu = 10.;
-%dt = 0.01;                                  % Time step
-%tfinal = 2;                                 % Stopping time
-%nsteps = ceil(tfinal/dt);                   % Number of time steps
-%m = 20;                                     % Spatial discretization
-
-u0 = diskfun(@(x,y) 2 + exp(-5*(x+.4).^2 -5*(y+.2).^2) + 0.8* exp(-10*(x-.5).^2 -10*(y+.6).^2) ...
-+1.2*exp(-20*(x-.5).^2 -20*(y-.3).^2));
+u0 = diskfun(@(x,y) 2 + 0.8*exp(-5*(x+.4).^2 -5*(y+.2).^2) + 1.2* exp(-10*(x-.5).^2 -10*(y+.6).^2) ...
++1.5*exp(-20*(x-.5).^2 -20*(y-.3).^2));
 alpha = 0.1;
 mu = 1.;
-dt = 0.01;                                  % Time step
+dt = 0.1;                                  % Time step
 tfinal = 2;                                 % Stopping time
 nsteps = ceil(tfinal/dt);                   % Number of time steps
 m = 20;
@@ -31,7 +21,7 @@ obs = [];
 for ind=1:num_points
 
     phase = double(phase_list(ind));
-    g =  diskfun(@(theta, r) 1 + cos(theta+phase));
+    g =  1 + diskfun(@(theta, r) cos(theta + phase), 'polar');
     initial_bc = u0(:,1);
     up = u0;                                    % Previous time step
 

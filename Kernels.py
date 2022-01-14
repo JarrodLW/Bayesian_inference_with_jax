@@ -108,7 +108,7 @@ class Periodic(Kernels):
     # TODO: finish implementation of gradient
     # \sigma^2\exp(-2\sin^2(\pi\Vert x - x'\Vert/p)/l^2)
     # jax isn't able to compute the gradient at zero, despite being well-defined, so we have to code the Jacobian up
-    # by hand
+    # by hand. See https://jax.readthedocs.io/en/latest/notebooks/autodiff_cookbook.html.
 
     _sigma = None
     _lengthscale = None
