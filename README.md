@@ -1,8 +1,6 @@
-<<<<<<< HEAD
-# Bayesian_inference_with_jax
-A Bayesian optimisation toolkit built on jax
-=======
-# DETI_project
+
+# A Bayesian optimisation toolkit built on jax
+
 **Summary**: basic single-objective Bayesian Optimisation,
 for scalar objectives defined over a domain of arbitrary dimension. Implementation using JAX allows for 
 auto-differentiation of acquisition functions etc, enabling the use gradient-based approaches to optimisation, 
@@ -26,4 +24,4 @@ examples.
 partial prescription of kernel hyperparameters, the remaining hyperparameters being inferred by MLE (see 
 *maximum_likelihood_estimation* wrapper method in the *Experiment* class). Note that this has only been implemented for 
 the three basic kernel types, currently. *See Algorithms.py*.
->>>>>>> jax_dev
+
